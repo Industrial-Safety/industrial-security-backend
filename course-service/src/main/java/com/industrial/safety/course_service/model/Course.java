@@ -1,6 +1,10 @@
 package com.industrial.safety.course_service.model;
 
 
+import com.industrial.safety.course_service.model.component.Section;
+import com.industrial.safety.course_service.model.record.Details;
+import com.industrial.safety.course_service.model.record.Review;
+import com.industrial.safety.course_service.model.record.Teacher;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
