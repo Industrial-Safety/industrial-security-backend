@@ -40,9 +40,9 @@
       <module name="course-service" options="-parameters" />
       <module name="logistics-service" options="-parameters" />
       <module name="notification-service" options="-parameters" />
-      <module name="order-service" options="-parameters" />
-      <module name="payment-service" options="-parameters" />
-      <module name="user-service" options="-parameters" />
+      <module name="order-service" options="" />
+      <module name="payment-service" options="" />
+      <module name="user-service" options="" />
     </option>
   </component>
 </project>

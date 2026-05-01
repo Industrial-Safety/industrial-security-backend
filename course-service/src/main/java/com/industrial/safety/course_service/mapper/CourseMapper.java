@@ -18,4 +18,6 @@ public interface CourseMapper
     LectureResponse toLectureResponse(Lecture lecture);
     ResourceResponse toResourceResponse(Resource resource);
     SectionResponse toSectionResponse(Section section);
+
+    void  updateCourseFromRqueset(CourseRequest courseRequest,Course course);
 }
