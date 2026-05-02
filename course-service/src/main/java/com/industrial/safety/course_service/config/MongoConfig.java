@@ -37,7 +37,7 @@ public class MongoConfig extends AbstractMongoClientConfiguration {
 
     @Override
     protected String getDatabaseName() {
-        return "product-db";
+        return database;
     }
 
     @Override

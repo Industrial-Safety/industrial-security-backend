@@ -1,7 +1,7 @@
 # --- ETAPA 1 : Build (La construccion)
 FROM eclipse-temurin:25-jdk-alpine AS builder
 WORKDIR /app
-COPY .. .
+COPY . .
 RUN chmod +x ./mvnw
 RUN ./mvnw clean package -DskipTests
 
