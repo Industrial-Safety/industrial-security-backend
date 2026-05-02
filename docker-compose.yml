@@ -1,0 +1,30 @@
+services:
+  # 1. El Servicio de Base de Datos
+  mongodb:
+    image: mongo:7.0.4
+    container_name: mongodb
+    ports:
+      - "27019:27017" # El puerto izquierdo (27019) es para que tú entres con un cliente visual. El derecho es el interno.
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    volumes:
+      - mongo_data:/data/db
+
+  # 2. Tu Microservicio (El que usa el Dockerfile)
+  course-service:
+    build: . # Esto le dice a Docker: "Busca el Dockerfile en esta misma carpeta y constrúyelo"
+    container_name: course-service-app
+    ports:
+      - "8080:8080"
+    environment:
+      # IMPORTANTE: Dentro de la red de Docker ya no usas 'localhost'. Usas el nombre del contenedor ('mongodb').
+      - SPRING_DATA_MONGODB_URI=mongodb://root:password@mongodb:27017/course_db?authSource=admin
+      # Opcional: Aquí también puedes inyectar tus llaves de AWS de forma segura
+      # - AWS_ACCESS_KEY_ID=tu_access_key
+      # - AWS_SECRET_ACCESS_KEY=tu_secret_key
+    depends_on:
+      - mongodb # Obliga a que Mongo arranque antes que Spring Boot
+
+volumes:
+  mongo_data:

@@ -7,7 +7,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.service.annotation.PutExchange;
 
 import java.util.List;
 
@@ -36,7 +35,7 @@ public class CourseController
         return courseService.getCourseById(id);
     }
 
-    @PutExchange("/{id}")
+    @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public CourseResponse updateCourse(@PathVariable String id, @Valid @RequestBody CourseRequest courseRequest){
         return courseService.updateCourse(id,courseRequest);
