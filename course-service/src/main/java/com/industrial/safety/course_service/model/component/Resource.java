@@ -14,6 +14,7 @@ public class Resource
 {
     private String id;
     private String title;
-    private ResourceType typeUrl;
+    private ResourceType resourceType;
+    private String url;
     private String fileSize;
 }
