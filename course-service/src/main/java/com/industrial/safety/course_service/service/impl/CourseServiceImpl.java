@@ -5,6 +5,7 @@ import com.industrial.safety.course_service.dto.CourseResponse;
 import com.industrial.safety.course_service.exception.ResourceNotFoundException;
 import com.industrial.safety.course_service.mapper.CourseMapper;
 import com.industrial.safety.course_service.model.Course;
+import com.industrial.safety.course_service.model.component.Section;
 import com.industrial.safety.course_service.repository.CourseRepository;
 import com.industrial.safety.course_service.service.CourseService;
 import lombok.RequiredArgsConstructor;
@@ -60,6 +61,18 @@ public class CourseServiceImpl implements CourseService
                 ()-> new ResourceNotFoundException("Course","id",id)
         );
         courseMapper.updateCourseFromRqueset(courseRequest,course);
+        course.getSectionList().forEach(section -> {
+            if (section.getId() == null)
+                section.setId(UUID.randomUUID().toString());
+            section.getLectureList().forEach(lecture -> {
+                if (lecture.getId() == null)
+                    lecture.setId(UUID.randomUUID().toString());
+                lecture.getResourceList().forEach(resource -> {
+                    if (resource.getId() == null)
+                        resource.setId(UUID.randomUUID().toString());
+                });
+            });
+        });
         Course courseUpdate = courseRepository.save(course);
         return courseMapper.toCourseResponse(courseUpdate);
     }
@@ -68,7 +81,7 @@ public class CourseServiceImpl implements CourseService
     @Transactional
     public void deleteCourse(String id) {
       if(!courseRepository.existsById(id))
-        throw new RuntimeException("Course no econtrado"+id);
+        throw new ResourceNotFoundException("Course no econtrado","id",id);
       courseRepository.deleteById(id);
     }
 
