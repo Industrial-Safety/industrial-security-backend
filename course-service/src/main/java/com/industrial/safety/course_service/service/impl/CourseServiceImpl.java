@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +24,13 @@ public class CourseServiceImpl implements CourseService
     @Transactional
     public CourseResponse creatCourse(CourseRequest courseRequest) {
         Course course = courseMapper.toCourse(courseRequest);
+        course.setId(UUID.randomUUID().toString());
+        course.getSectionList().stream()
+                .peek(section -> section.setId(UUID.randomUUID().toString()))
+                .flatMap(section -> section.getLectureList().stream())
+                .peek(lecture -> lecture.setId(UUID.randomUUID().toString()))
+                .flatMap(lecture -> lecture.getResourceList().stream())
+                .forEach(resource -> resource.setId(UUID.randomUUID().toString()));
         Course newCourse = courseRepository.save(course);
         return courseMapper.toCourseResponse(newCourse);
     }
