@@ -27,7 +27,6 @@ public record LectureRequest (
         @NotNull(message = "Debe especificar si la lección es una vista previa")
         Boolean isPreview,
 
-        @NotEmpty(message = "La lista no puede estar vacia")
         @Valid
         List<ResourceRequest>resourceList
 ){

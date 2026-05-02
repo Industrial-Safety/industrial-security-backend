@@ -17,7 +17,6 @@ public record ResourceRequest (
         @URL
         String url,
 
-        @NotBlank(message = "El file no puede ser 0")
         String fileSize
 ){
 }
