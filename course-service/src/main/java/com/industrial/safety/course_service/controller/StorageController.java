@@ -18,12 +18,7 @@ public class StorageController {
     public ResponseEntity<Map<String, String>> getUploadUrl(
             @RequestParam String fileName,
             @RequestParam String contentType) {
-
-        // Llamamos al servicio para generar el ticket temporal
-        String presignedUrl = storageService.generatePresignedUrl(fileName, contentType);
-
-        // Devolvemos un JSON limpio con la clave "uploadUrl"
-        return ResponseEntity.ok(Map.of("uploadUrl", presignedUrl));
+        return ResponseEntity.ok(storageService.generatePresignedUrl(fileName, contentType));
     }
 }
 
