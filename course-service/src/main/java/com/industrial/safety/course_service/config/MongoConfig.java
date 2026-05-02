@@ -1,0 +1,58 @@
+package com.industrial.safety.course_service.config;
+
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoClientSettings;
+import com.mongodb.MongoCredential;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.mongodb.config.AbstractMongoClientConfiguration;
+
+@Configuration //decimons a spring no use los valores por defectos para mongodb
+public class MongoConfig extends AbstractMongoClientConfiguration {
+  //antes de comenzar menciona que si tenemos error en credenciales o no lo detecta la solucion sinio es crear nosotros mismos
+
+    // Inyectamos las variables.
+    // La sintaxis es: "${NOMBRE_VARIABLE_EN_SPRING}"
+    @Value("${spring.data.mongodb.host}")
+    private String host;
+
+    @Value("${spring.data.mongodb.port}")
+    private int port;
+
+    @Value("${spring.data.mongodb.database}")
+    private String database;
+
+    @Value("${spring.data.mongodb.username}")
+    private String username;
+
+    @Value("${spring.data.mongodb.password}")
+    private String password;
+
+    @Value("${spring.data.mongodb.authentication-database}")
+    private String authDatabase;
+
+
+    @Override
+    protected String getDatabaseName() {
+        return "product-db";
+    }
+
+    @Override
+    @Bean
+    public MongoClient mongoClient(){
+        MongoCredential credential = MongoCredential.createCredential(
+                username,authDatabase,password.toCharArray()
+        );
+
+        String connecitionString = String.format("mongodb://%s:%d",host,port);
+
+        MongoClientSettings settings = MongoClientSettings.builder()
+                .applyConnectionString(new ConnectionString(connecitionString))
+                .credential(credential)
+                .build();
+        return MongoClients.create(settings);
+    }
+}
