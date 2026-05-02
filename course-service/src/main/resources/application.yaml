@@ -1,8 +1,37 @@
 spring:
   application:
     name: course-service
+
   threads:
     virtual:
       enabled: true
-    data:
-      mongodb:
+
+  data:
+    mongodb:
+      host: localhost
+      port: 27019
+      database: course-db
+      username: root
+      password: password
+      authentication-database: admin
+
+server:
+  port: 8080
+# Configuración para Spring Cloud AWS
+cloud:
+  aws:
+    region:
+      static: ${AWS_REGION}
+    credentials:
+      access-key: ${AWS_ACCESS_KEY_ID}
+      secret-key: ${AWS_SECRET_ACCESS_KEY}
+    s3:
+      bucket-name: ${AWS_BUCKET_NAME}
+    stack:
+      auto: false
+
+# Configuración por si tu código usa el prefijo directo (sin 'cloud')
+aws:
+  s3:
+    bucket-name: ${AWS_BUCKET_NAME}
+  region: ${AWS_REGION}
