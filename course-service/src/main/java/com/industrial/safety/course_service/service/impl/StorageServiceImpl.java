@@ -11,6 +11,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequ
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 import java.time.Duration;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -21,18 +22,29 @@ public class StorageServiceImpl implements StorageService {
     @Value("${aws.s3.bucket-name}")
     private String bucketName;
 
+
     @Override
-    public String generatePresignedUrl(String fileName, String contenyType) {
+    public Map<String, String> generatePresignedUrl(String fileName, String contentType) {
+        String key = "safety-videos/" + fileName;
+
         PutObjectRequest objectRequest = PutObjectRequest.builder()
                 .bucket(bucketName)
-                .key("safety-videos/" + fileName)
-                .contentType(contenyType)
+                .key(key)
+                .contentType(contentType)
                 .build();
-        PutObjectPresignRequest putObjectPresignRequest = PutObjectPresignRequest.builder()
+
+        PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
                 .signatureDuration(Duration.ofMinutes(15))
                 .putObjectRequest(objectRequest)
                 .build();
-        PresignedPutObjectRequest presignedPutObjectRequest = s3Presigner.presignPutObject(putObjectPresignRequest);
-        return presignedPutObjectRequest.url().toExternalForm();
+
+        PresignedPutObjectRequest presigned = s3Presigner.presignPutObject(presignRequest);
+
+        String uploadUrl = presigned.url().toExternalForm();
+        String fileUrl = presigned.url().toString().split("\\?")[0];
+        return Map.of(
+                "uploadUrl", uploadUrl,
+                "fileUrl", fileUrl
+        );
     }
 }

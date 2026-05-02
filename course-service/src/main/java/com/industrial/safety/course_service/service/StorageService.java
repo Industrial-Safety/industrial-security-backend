@@ -1,6 +1,8 @@
 package com.industrial.safety.course_service.service;
 
+import java.util.Map;
+
 public interface StorageService
 {
-    String generatePresignedUrl(String fileName,String contenyType);
+    Map<String, String> generatePresignedUrl(String fileName, String contentType);
 }
