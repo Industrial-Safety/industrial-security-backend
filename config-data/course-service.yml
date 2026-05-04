@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: course-service
+  threads:
+    virtual:
+      enabled: true
+  data:
+    mongodb:
+      uri: mongodb://root:password@localhost:27019/course-db?authSource=admin
+
+server:
+  port: 8080
+  error:
+    include-message: always #configurar que se aplica y que siempre este en el json sin importar si el error lo generamos nostros o el frontend
+    include-stacktrace: never
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+cloud:
+  aws:
+    region:
+      static: ${AWS_REGION}
+    credentials:
+      access-key: ${AWS_ACCESS_KEY_ID}
+      secret-key: ${AWS_SECRET_ACCESS_KEY}
+    s3:
+      bucket-name: ${AWS_BUCKET_NAME}
+    stack:
+      auto: false
+
+aws:
+  s3:
+    bucket-name: ${AWS_BUCKET_NAME}
+  region: ${AWS_REGION}
