@@ -21,7 +21,10 @@ public class SecurityConfig {
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity serverHttpSecurity){
         serverHttpSecurity.csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(authorizeExchangeSpec -> authorizeExchangeSpec
-                        .pathMatchers())
+                        .pathMatchers("/eureka/**").permitAll())
+                .oauth2ResourceServer(o->o
+                        .jwt(jwtSpec -> jwtSpec.jwtAuthenticationConverter(reactiveJwtAuthenticationConverterAdapter())));
+        return serverHttpSecurity.build();
     }
     private ReactiveJwtAuthenticationConverterAdapter reactiveJwtAuthenticationConverterAdapter(){
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter(); //creamos el converitor

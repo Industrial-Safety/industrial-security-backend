@@ -22,7 +22,7 @@ spring:
             scope: openid
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:9090/realms/ecommerce-realm
+          issuer-uri: http://localhost:9090/realms/industrial-safety
     cloud:
       gateway:
         # 3. Filtro Global: Pasa el token a TODOS los microservicios
@@ -34,3 +34,5 @@ spring:
             uri: lb://course-service
             predicates:
               - Path=/api/v1/course/**
+server:
+  port: 9000
