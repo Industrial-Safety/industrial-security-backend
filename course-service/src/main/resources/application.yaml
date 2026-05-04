@@ -1,29 +1,5 @@
 spring:
   application:
     name: course-service
-  threads:
-    virtual:
-      enabled: true
-  data:
-    mongodb:
-      uri: mongodb://root:password@localhost:27019/course-db?authSource=admin
-
-server:
-  port: 8080
-
-cloud:
-  aws:
-    region:
-      static: ${AWS_REGION}
-    credentials:
-      access-key: ${AWS_ACCESS_KEY_ID}
-      secret-key: ${AWS_SECRET_ACCESS_KEY}
-    s3:
-      bucket-name: ${AWS_BUCKET_NAME}
-    stack:
-      auto: false
-
-aws:
-  s3:
-    bucket-name: ${AWS_BUCKET_NAME}
-  region: ${AWS_REGION}
+  config:
+    import: "optional:configserver:http://localhost:8888"
