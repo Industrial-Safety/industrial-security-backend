@@ -4,5 +4,38 @@ keycloak:
   admin:
     username: ${KEYCLOAK_ADMIN_USERNAME}
     password: ${KEYCLOAK_ADMIN_PASSWORD}
+
 server:
   port: 8081
+spring:
+  application:
+    name: user-service
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+cloud:
+  aws:
+    region:
+      static: ${AWS_REGION}
+    credentials:
+      access-key: ${AWS_ACCESS_KEY_ID}
+      secret-key: ${AWS_SECRET_ACCESS_KEY}
+    stack:
+      auto: false
+
+aws:
+  s3:
+    bucket-name: ${AWS_BUCKET_NAME}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    fetch-registry: true
+    register-with-eureka: true

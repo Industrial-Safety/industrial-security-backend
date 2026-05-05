@@ -6,6 +6,7 @@ import com.industrial.safety.user_service.exception.ResourceNotFoundException;
 import com.industrial.safety.user_service.mapper.UserMapper;
 import com.industrial.safety.user_service.model.User;
 import com.industrial.safety.user_service.repository.UserRepository;
+import com.industrial.safety.user_service.service.KeycloakService;
 import com.industrial.safety.user_service.service.QrService;
 import com.industrial.safety.user_service.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -20,13 +21,22 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final QrService qrService;
+    private final KeycloakService keycloakService;
 
     @Override
     public UserResponse createUser(UserRequest userRequest) {
+        String kecloakId = keycloakService.createUser(userRequest);
+
         User user = userMapper.toUser(userRequest);
         user.setIsActive(true);
         user.setCreateAccount(LocalDate.now());
-        user.setQrCodeUrl(qrService.generateAndUploadQr());
+
+        user.setQrCodeUrl(qrService.generateAndUploadQr(
+                kecloakId,
+                userRequest.getName() + " " + userRequest.getLastName(),
+                userRequest.getEmail(),
+                userRequest.getRole()
+        ));
         User nUser = userRepository.save(user);
         return userMapper.toUserResponse(nUser);
     }

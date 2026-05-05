@@ -16,6 +16,9 @@ public class UserRequest
     @NotBlank(message = "El nombre no puede ser  null")
     private String lastName;
 
+    @NotBlank(message = "El rol no puede ser null")
+    private String role;
+
     @NotBlank(message = "El email no puede ser nullo")
     @Email
     private String email;
