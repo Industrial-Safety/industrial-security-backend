@@ -13,7 +13,7 @@ import java.time.LocalDate;
 @Builder
 public class UserResponse
 {
-    private Long id;
+    private String id;
     private String keycloakId;
     private String name;
     private String lastName;
