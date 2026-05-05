@@ -29,13 +29,14 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.GET,"/api/v1/course/**").hasAnyRole(
                                 Role.ALUMNO.name(),
                                 Role.MARKETING.name(),
-                                Role.TRABAJADOR.name()
+                                Role.TRABAJADOR.name(),
+                                Role.INSTRUCTOR.name()
                         ).anyExchange().authenticated())
                 .oauth2ResourceServer(o->o
                         .jwt(jwtSpec -> jwtSpec.jwtAuthenticationConverter(reactiveJwtAuthenticationConverterAdapter())));
         return serverHttpSecurity.build();
     }
-    private ReactiveJwtAuthenticationConverterAdapter reactiveJwtAuthenticationConverterAdapter(){
+    /*private ReactiveJwtAuthenticationConverterAdapter reactiveJwtAuthenticationConverterAdapter(){
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter(); //creamos el converitor
         converter.setJwtGrantedAuthoritiesConverter(j->
         { Map<String,Object> realmAcess =( Map<String,Object>) j.getClaims().get("realm_access"); //navegando buscado el token creando el premiso y traformand
@@ -48,5 +49,21 @@ public class SecurityConfig {
                     .collect(Collectors.toSet()); //tranformamos concantenando
         });
         return new ReactiveJwtAuthenticationConverterAdapter(converter); //devolvemos el envoltorio
+    }*/
+    private ReactiveJwtAuthenticationConverterAdapter reactiveJwtAuthenticationConverterAdapter(){
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(j -> {
+            Map<String, Object> realmAccess = (Map<String, Object>) j.getClaims().get("realm_access");
+            if (realmAccess == null || realmAccess.isEmpty()) {
+                return Collections.emptyList();
+            }
+            Collection<String> roles = (Collection<String>) realmAccess.get("roles");
+            return roles.stream()
+                    .map(role -> new SimpleGrantedAuthority(
+                            role.startsWith("ROLE_") ? role : "ROLE_" + role
+                    ))
+                    .collect(Collectors.toSet());
+        });
+        return new ReactiveJwtAuthenticationConverterAdapter(converter);
     }
 }
