@@ -20,6 +20,17 @@ services:
       POSTGRES_DB: keycloak-db
     volumes:
       - keycloak_data:/var/lib/postgresql/data
+  user-db:
+    image: postgres:16-alpine
+    container_name: user-db
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: user-db
+    volumes:
+      - user_data:/var/lib/postgresql/data
   keycloak:
     image: quay.io/keycloak/keycloak:24.0.1
     container_name: keycloak
@@ -39,3 +50,4 @@ services:
 volumes:
   mongo_data:
   keycloak_data:
+  user_data:
