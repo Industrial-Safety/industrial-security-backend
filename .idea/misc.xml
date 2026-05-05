@@ -7,7 +7,6 @@
         <option value="$PROJECT_DIR$/auth-service/pom.xml" />
         <option value="$PROJECT_DIR$/user-service/pom.xml" />
         <option value="$PROJECT_DIR$/order-service/pom.xml" />
-        <option value="$PROJECT_DIR$/course-service/pom.xml" />
         <option value="$PROJECT_DIR$/payment-service/pom.xml" />
         <option value="$PROJECT_DIR$/logistics-service/logistics-service/pom.xml" />
         <option value="$PROJECT_DIR$/notification-service/pom.xml" />
@@ -15,6 +14,7 @@
         <option value="$PROJECT_DIR$/api-gateway/pom.xml" />
         <option value="$PROJECT_DIR$/discovery-server/pom.xml" />
         <option value="$PROJECT_DIR$/config-server/pom.xml" />
+        <option value="$PROJECT_DIR$/course-service/pom.xml" />
       </list>
     </option>
   </component>
