@@ -5,15 +5,10 @@ spring:
     config:
       server:
         git:
-          # 1. La URI debe ser estrictamente la ruta raíz del repositorio (la que termina en .git)
           uri: https://github.com/Industrial-Safety/industrial-security-backend.git
-          # 2. Le decimos a Spring en qué rama buscar
           default-label: richar
-
           clone-on-start: true
-
-          # 3. AQUÍ ESTÁ LA MAGIA: Le decimos en qué subcarpeta están los .yml
           search-paths: config-data
 
-  server:
-    port: 8888
+server:
+  port: 8888

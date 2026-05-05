@@ -1,7 +1,9 @@
 package com.industrial.safety.api_gateway.config;
 
+import com.industrial.safety.api_gateway.enums.Role;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -21,7 +23,14 @@ public class SecurityConfig {
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity serverHttpSecurity){
         serverHttpSecurity.csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(authorizeExchangeSpec -> authorizeExchangeSpec
-                        .pathMatchers("/eureka/**").permitAll())
+                        .pathMatchers("/eureka/**").permitAll()
+                        .pathMatchers("/api/v1/storage/**").hasRole(Role.INSTRUCTOR.name())
+                        .pathMatchers(HttpMethod.POST,"/api/v1/course/**").hasRole(Role.INSTRUCTOR.name())
+                        .pathMatchers(HttpMethod.GET,"/api/v1/course/**").hasAnyRole(
+                                Role.ALUMNO.name(),
+                                Role.MARKETING.name(),
+                                Role.TRABAJADOR.name()
+                        ).anyExchange().authenticated())
                 .oauth2ResourceServer(o->o
                         .jwt(jwtSpec -> jwtSpec.jwtAuthenticationConverter(reactiveJwtAuthenticationConverterAdapter())));
         return serverHttpSecurity.build();
