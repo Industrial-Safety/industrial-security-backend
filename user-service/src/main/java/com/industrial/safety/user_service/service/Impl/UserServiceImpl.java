@@ -26,6 +26,7 @@ public class UserServiceImpl implements UserService {
         User user = userMapper.toUser(userRequest);
         user.setIsActive(true);
         user.setCreateAccount(LocalDate.now());
+        user.setQrCodeUrl(qrService.generateAndUploadQr());
         User nUser = userRepository.save(user);
         return userMapper.toUserResponse(nUser);
     }

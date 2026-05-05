@@ -7,20 +7,14 @@ import com.google.zxing.qrcode.QRCodeWriter;
 import com.industrial.safety.user_service.service.QrService;
 import com.industrial.safety.user_service.service.StorageService;
 import lombok.RequiredArgsConstructor;
-import org.apache.tomcat.util.http.fileupload.ByteArrayOutputStream;
-import org.springframework.beans.factory.annotation.Value;
+import java.io.ByteArrayOutputStream;
 import org.springframework.stereotype.Service;
-import software.amazon.awssdk.core.sync.RequestBody;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 @Service
 @RequiredArgsConstructor
 public class QrServiceImpl implements QrService
 {
     private final StorageService storageService;
-
-    @Value("${aws.s3.bucket-name}")
-    private String bucketName;
 
     @Override
     public String generateAndUploadQr(String keycloakId, String fullName, String email, String role) {
