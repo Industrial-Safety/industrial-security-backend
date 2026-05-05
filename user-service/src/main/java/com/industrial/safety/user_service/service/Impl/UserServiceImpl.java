@@ -25,14 +25,14 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponse createUser(UserRequest userRequest) {
-        String kecloakId = keycloakService.createUser(userRequest);
+        String keycloakId = keycloakService.createUser(userRequest);
 
         User user = userMapper.toUser(userRequest);
         user.setIsActive(true);
         user.setCreateAccount(LocalDate.now());
-
+        user.setKeycloakId(keycloakId);
         user.setQrCodeUrl(qrService.generateAndUploadQr(
-                kecloakId,
+                keycloakId,
                 userRequest.getName() + " " + userRequest.getLastName(),
                 userRequest.getEmail(),
                 userRequest.getRole()
