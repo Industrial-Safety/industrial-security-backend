@@ -21,6 +21,7 @@ public class User
     private String name;
     private String lastName;
     private String email;
+    private String cellphone;
     private String urlPhoto;
     private String qrCodeUrl;
     private Boolean isActive;
