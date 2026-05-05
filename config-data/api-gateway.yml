@@ -23,16 +23,16 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: http://localhost:9090/realms/industrial-safety
-    cloud:
-      gateway:
+  cloud:
+    gateway:
         # 3. Filtro Global: Pasa el token a TODOS los microservicios
-        default-filters:
-          - TokenRelay
+      default-filters:
+        - TokenRelay
 
-        routes:
-          - id: course-service
-            uri: lb://course-service
-            predicates:
-              - Path=/api/v1/course/**
+      routes:
+        - id: course-service
+          uri: lb://course-service
+          predicates:
+            - Path=/api/v1/course/**
 server:
   port: 9000

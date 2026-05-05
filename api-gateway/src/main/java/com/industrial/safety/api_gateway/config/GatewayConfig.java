@@ -12,7 +12,7 @@ public class GatewayConfig {
     public RouteLocator routeLocator (RouteLocatorBuilder routeLocatorBuilder){
         return routeLocatorBuilder.routes()
                 .route("course-service", c->c
-                        .path("/api/v1/course/**")
+                        .path("/api/v1/course/**","/api/v1/storage/**")
                         .uri("lb://COURSE-SERVICE"))
                 .build();
     }
