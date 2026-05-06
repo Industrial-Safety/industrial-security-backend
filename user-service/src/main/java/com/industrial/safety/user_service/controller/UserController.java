@@ -18,11 +18,10 @@ public class UserController
 {
     private final UserService userService;
 
-    @PostMapping("/register")
-    public ResponseEntity<UserResponse> registerStudent(@Valid @RequestBody UserRequest userRequest) {
+    @PostMapping("/register")  // ← sin @ResponseStatus
+    public UserResponse registerStudent(@Valid @RequestBody UserRequest userRequest) {
         userRequest.setRole("ROLE_ALUMNO");
-        UserResponse response = userService.createUser(userRequest);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return userService.createUser(userRequest);
     }
 
     @PostMapping

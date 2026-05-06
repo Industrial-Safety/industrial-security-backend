@@ -9,8 +9,11 @@ import com.industrial.safety.user_service.repository.UserRepository;
 import com.industrial.safety.user_service.service.KeycloakService;
 import com.industrial.safety.user_service.service.QrService;
 import com.industrial.safety.user_service.service.UserService;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -29,6 +32,12 @@ public class UserServiceImpl implements UserService {
         if (userExistente.isPresent()) {
             System.out.println("El usuario ya estaba registrado. Dejándolo pasar...");
             return userMapper.toUserResponse(userExistente.get());
+        }
+        // ── Usuario nuevo → forzamos 201 desde el servicio ──
+        HttpServletResponse httpResponse = ((ServletRequestAttributes)
+                RequestContextHolder.currentRequestAttributes()).getResponse();
+        if (httpResponse != null) {
+            httpResponse.setStatus(HttpServletResponse.SC_CREATED); // 201
         }
 
         String keycloakId;
