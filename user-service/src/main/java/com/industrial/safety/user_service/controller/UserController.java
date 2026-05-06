@@ -17,6 +17,13 @@ public class UserController
 {
     private final UserService userService;
 
+    @PostMapping("/register")
+    @ResponseStatus(HttpStatus.CREATED)
+    public UserResponse registerStudent(@Valid @RequestBody UserRequest userRequest) {
+        userRequest.setRole("ROLE_ALUMNO");
+        return userService.createUser(userRequest);
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public UserResponse createUser(@Valid @RequestBody UserRequest userRequest) {
