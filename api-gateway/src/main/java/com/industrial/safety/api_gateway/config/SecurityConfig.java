@@ -25,7 +25,9 @@ public class SecurityConfig {
         serverHttpSecurity.csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(authorizeExchangeSpec -> authorizeExchangeSpec
                         .pathMatchers("/eureka/**").permitAll()
-                        .pathMatchers("/api/v1/storage/**").hasRole(Role.INSTRUCTOR.name())
+                        .pathMatchers(HttpMethod.GET, "/api/v1/storage/upload-url").hasAnyRole(
+                                Role.ALUMNO.name(), Role.INSTRUCTOR.name()
+                        )
                         .pathMatchers(HttpMethod.POST,"/api/v1/course/**").hasRole(Role.INSTRUCTOR.name())
                         .pathMatchers(HttpMethod.GET,"/api/v1/course/**").hasAnyRole(
                                 Role.ALUMNO.name(),
@@ -34,11 +36,20 @@ public class SecurityConfig {
                                 Role.INSTRUCTOR.name()
                         )
                         .pathMatchers(HttpMethod.POST, "/api/v1/users/register").permitAll()
-                        .pathMatchers(HttpMethod.POST,"/api/v1/users/**").hasRole(Role.ADMINISTRADOR.name())
+
+                        .pathMatchers(HttpMethod.GET, "/api/v1/users/{id}").hasAnyRole(
+                                Role.ALUMNO.name(), Role.ADMINISTRADOR.name()
+                        )
+
                         .pathMatchers(HttpMethod.GET,"/api/v1/users/**").hasAnyRole(
                                 Role.ADMINISTRADOR.name()
                         )
+
+                        .pathMatchers(HttpMethod.PUT, "/api/v1/users/{id}").hasAnyRole(
+                                Role.ALUMNO.name(), Role.ADMINISTRADOR.name()
+                        )
                         .pathMatchers(HttpMethod.PUT, "/api/v1/users/**").hasRole(Role.ADMINISTRADOR.name())
+
                         .anyExchange().authenticated())
                 .oauth2Login(Customizer.withDefaults())
                 .oauth2ResourceServer(o->o
