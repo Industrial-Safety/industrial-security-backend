@@ -4,6 +4,7 @@ import com.industrial.safety.api_gateway.enums.Role;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -39,6 +40,7 @@ public class SecurityConfig {
                         )
                         .pathMatchers(HttpMethod.PUT, "/api/v1/users/**").hasRole(Role.ADMINISTRADOR.name())
                         .anyExchange().authenticated())
+                .oauth2Login(Customizer.withDefaults())
                 .oauth2ResourceServer(o->o
                         .jwt(jwtSpec -> jwtSpec.jwtAuthenticationConverter(reactiveJwtAuthenticationConverterAdapter())));
         return serverHttpSecurity.build();
