@@ -57,4 +57,23 @@ public class KeycloakServiceImpl implements KeycloakService {
 
         return keycloakId;
     }
+    @Override
+    public String getUserIdByEmail(String email) {
+        List<UserRepresentation> users = keycloak.realm(realm)
+                .users()
+                .searchByEmail(email, true);
+
+        if (users != null && !users.isEmpty()) {
+            return users.get(0).getId();
+        }
+
+        throw new RuntimeException("No se encontró al usuario con email: " + email);
+    }
+    @Override
+    public void assignRole(String keycloakId, String roleName) {
+        RealmResource realmResource = keycloak.realm(realm);
+        RoleRepresentation role = realmResource.roles().get(roleName).toRepresentation();
+        realmResource.users().get(keycloakId).roles().realmLevel().add(List.of(role));
+    }
+
 }
