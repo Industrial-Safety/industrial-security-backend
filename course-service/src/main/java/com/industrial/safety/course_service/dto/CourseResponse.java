@@ -8,6 +8,7 @@ import com.industrial.safety.course_service.model.record.Teacher;
 import java.util.List;
 
 public record CourseResponse (
+        String id,
         String title,
         String subtitle,
         Teacher teacher,
