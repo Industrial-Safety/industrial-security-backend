@@ -25,8 +25,20 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponse createUser(UserRequest userRequest) {
-        String keycloakId = keycloakService.createUser(userRequest);
+        var userExistente = userRepository.findByEmail(userRequest.getEmail());
+        if (userExistente.isPresent()) {
+            System.out.println("El usuario ya estaba registrado. Dejándolo pasar...");
+            return userMapper.toUserResponse(userExistente.get());
+        }
 
+        String keycloakId;
+        try {
+            keycloakId = keycloakService.createUser(userRequest);
+        } catch (Exception e) {
+            System.out.println("El usuario fue creado por OAuth. Obteniendo ID real...");
+            keycloakId = keycloakService.getUserIdByEmail(userRequest.getEmail());
+            keycloakService.assignRole(keycloakId, userRequest.getRole());
+        }
         User user = userMapper.toUser(userRequest);
         user.setIsActive(true);
         user.setCreateAccount(LocalDate.now());

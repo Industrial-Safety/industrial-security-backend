@@ -6,6 +6,7 @@ import com.industrial.safety.user_service.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,10 +19,10 @@ public class UserController
     private final UserService userService;
 
     @PostMapping("/register")
-    @ResponseStatus(HttpStatus.CREATED)
-    public UserResponse registerStudent(@Valid @RequestBody UserRequest userRequest) {
+    public ResponseEntity<UserResponse> registerStudent(@Valid @RequestBody UserRequest userRequest) {
         userRequest.setRole("ROLE_ALUMNO");
-        return userService.createUser(userRequest);
+        UserResponse response = userService.createUser(userRequest);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping
