@@ -1,0 +1,38 @@
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    fetch-registry: true
+    register-with-eureka: true
+spring:
+  security:
+    oauth2:
+      # 1. Configuración de CLIENTE (Necesaria para TokenRelay)
+      client:
+        provider:
+          keycloak:
+            issuer-uri: http://localhost:9090/realms/industrial-safety
+        registration:
+          api-gateway-client:
+            provider: keycloak
+            client-id: api-gateway-client
+            client-secret: ${SECRET}
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/keycloak"
+            scope: openid
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9090/realms/industrial-safety
+  cloud:
+    gateway:
+        # 3. Filtro Global: Pasa el token a TODOS los microservicios
+      default-filters:
+        - TokenRelay
+
+      routes:
+        - id: course-service
+          uri: lb://course-service
+          predicates:
+            - Path=/api/v1/course/**
+server:
+  port: 9000
