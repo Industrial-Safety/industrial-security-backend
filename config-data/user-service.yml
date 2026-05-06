@@ -8,12 +8,15 @@ keycloak:
 server:
   port: 8081
 spring:
+  threads:
+    virtual:
+      enabled: true
   application:
     name: user-service
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: jdbc:postgresql://user-db:5432/user-db
+    username: admin
+    password: admin
   jpa:
     hibernate:
       ddl-auto: update

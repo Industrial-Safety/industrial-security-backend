@@ -20,6 +20,7 @@ services:
       POSTGRES_DB: keycloak-db
     volumes:
       - keycloak_data:/var/lib/postgresql/data
+
   user-db:
     image: postgres:16-alpine
     container_name: user-db

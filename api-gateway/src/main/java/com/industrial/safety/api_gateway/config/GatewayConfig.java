@@ -14,6 +14,9 @@ public class GatewayConfig {
                 .route("course-service", c->c
                         .path("/api/v1/course/**","/api/v1/storage/**")
                         .uri("lb://COURSE-SERVICE"))
+                .route("user-service", c->c
+                        .path("/api/v1/user/**")
+                        .uri("lb://USER-SERVICE"))
                 .build();
     }
 }

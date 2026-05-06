@@ -31,7 +31,14 @@ public class SecurityConfig {
                                 Role.MARKETING.name(),
                                 Role.TRABAJADOR.name(),
                                 Role.INSTRUCTOR.name()
-                        ).anyExchange().authenticated())
+                        )
+                        .pathMatchers(HttpMethod.POST, "/api/v1/users/register").permitAll()
+                        .pathMatchers(HttpMethod.POST,"/api/v1/users/**").hasRole(Role.ADMINISTRADOR.name())
+                        .pathMatchers(HttpMethod.GET,"/api/v1/users/**").hasAnyRole(
+                                Role.ADMINISTRADOR.name()
+                        )
+                        .pathMatchers(HttpMethod.PUT, "/api/v1/users/**").hasRole(Role.ADMINISTRADOR.name())
+                        .anyExchange().authenticated())
                 .oauth2ResourceServer(o->o
                         .jwt(jwtSpec -> jwtSpec.jwtAuthenticationConverter(reactiveJwtAuthenticationConverterAdapter())));
         return serverHttpSecurity.build();
