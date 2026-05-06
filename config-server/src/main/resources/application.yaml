@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: config-server
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/Industrial-Safety/industrial-security-backend.git
+          default-label: richar
+          clone-on-start: true
+          search-paths: config-data
+
+server:
+  port: 8888
