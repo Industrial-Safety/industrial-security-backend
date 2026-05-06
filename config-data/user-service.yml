@@ -14,7 +14,7 @@ spring:
   application:
     name: user-service
   datasource:
-    url: jdbc:postgresql://user-db:5432/user-db
+    url: jdbc:postgresql://user-db:5435/user-db
     username: admin
     password: admin
   jpa:
