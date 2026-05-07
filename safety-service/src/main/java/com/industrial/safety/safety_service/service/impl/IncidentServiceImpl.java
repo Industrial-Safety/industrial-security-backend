@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Pageable;
 
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 
 @Service
 @RequiredArgsConstructor
@@ -27,7 +28,7 @@ public class IncidentServiceImpl implements IncidentService {
     public IncidentResponse create(CreateIncidentRequest request) {
         Incident incident = Incident.builder()
                 .cameraKey(request.getCameraKey())
-                .violationTypes(request.getViolationTypes())
+                .violationTypes(String.join(",", request.getViolationTypes()))
                 .evidenceUrl(request.getEvidenceUrl())
                 .confidence(request.getConfidence())
                 .detectedAt(request.getDetectedAt())
@@ -79,7 +80,7 @@ public class IncidentServiceImpl implements IncidentService {
         return IncidentResponse.builder()
                 .id(i.getId())
                 .cameraKey(i.getCameraKey())
-                .violationTypes(i.getViolationTypes())
+                .violationTypes(Arrays.asList(i.getViolationTypes().split(",")))
                 .evidenceUrl(i.getEvidenceUrl())
                 .confidence(i.getConfidence())
                 .status(i.getStatus())

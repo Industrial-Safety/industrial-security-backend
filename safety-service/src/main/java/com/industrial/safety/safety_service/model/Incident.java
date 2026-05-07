@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.OffsetDateTime;
-import java.util.List;
+
 
 @Entity
 @Table(name = "incidents")
@@ -22,13 +22,8 @@ public class Incident {
     @Column(name = "camera_key", nullable = false)
     private String cameraKey;             // "cam-0", "cam-1"
 
-    @ElementCollection
-    @CollectionTable(
-            name = "incident_violations",
-            joinColumns = @JoinColumn(name = "incident_id")
-    )
-    @Column(name = "violation_type")
-    private List<String> violationTypes;  // ["Casco", "Guante"]
+    @Column(name = "violation_types", nullable = false)
+    private String violationTypes;  // "Casco,Guante"
 
     @Column(name = "evidence_url", length = 1024)
     private String evidenceUrl;           // URL S3 o ruta local
