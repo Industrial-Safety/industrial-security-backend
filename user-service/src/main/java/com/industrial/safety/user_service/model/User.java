@@ -17,13 +17,16 @@ public class User
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
+    private String dni;
     private String keycloakId;
     private String name;
     private String lastName;
     private String email;
     private String cellphone;
+    private String role;
     private String urlPhoto;
     private String qrCodeUrl;
     private Boolean isActive;
     private LocalDate createAccount;
+    private Boolean mustChangePassword;
 }
