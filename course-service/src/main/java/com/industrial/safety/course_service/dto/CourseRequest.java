@@ -1,6 +1,5 @@
 package com.industrial.safety.course_service.dto;
 
-import com.industrial.safety.course_service.model.component.Section;
 import com.industrial.safety.course_service.model.record.Details;
 import com.industrial.safety.course_service.model.record.Review;
 import com.industrial.safety.course_service.model.record.Teacher;
@@ -9,7 +8,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
-
 import java.util.List;
 
 public record CourseRequest (
@@ -17,7 +15,7 @@ public record CourseRequest (
         String title,
         @NotBlank(message = "El subtitulo no pueda estar vacio")
         String subtitle,
-
+        String coverImageUrl,
         Teacher teacher,
         @NotNull
         @Valid
@@ -31,5 +29,5 @@ public record CourseRequest (
         List<SectionRequest> sectionList,
         @Valid
         Review reviews
-)  {
+) {
 }
