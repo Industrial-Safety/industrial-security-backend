@@ -1,0 +1,43 @@
+package com.logistica.purchase.controller;
+
+import com.logistica.purchase.entity.PurchaseRequest;
+import com.logistica.purchase.service.PurchaseRequestService;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/requests")
+@CrossOrigin(origins = "http://localhost:3000")
+public class PurchaseRequestController {
+
+    private final PurchaseRequestService service;
+
+    public PurchaseRequestController(PurchaseRequestService service) {
+        this.service = service;
+    }
+
+    @GetMapping
+    public List<PurchaseRequest> getAll() {
+        return service.getAll();
+    }
+
+    @GetMapping("/{id}")
+    public PurchaseRequest getById(@PathVariable Long id) {
+        return service.getById(id).orElseThrow();
+    }
+
+    @PostMapping
+    public PurchaseRequest create(@RequestBody PurchaseRequest request) {
+        return service.save(request);
+    }
+
+    @PutMapping("/{id}")
+    public PurchaseRequest updateRequest(
+            @PathVariable Long id,
+            @RequestBody PurchaseRequest request) {
+
+        return service.updateRequest(id, request);
+    }
+
+}
