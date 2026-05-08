@@ -5,7 +5,6 @@ import com.industrial.safety.course_service.model.record.Review;
 import com.industrial.safety.course_service.model.record.Teacher;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
@@ -20,11 +19,8 @@ public record CourseRequest (
         @NotNull
         @Valid
         Details details,
-        @NotEmpty(message = "La lista debe de contener almenos un requerimiento")
         List<String> requirements,
-        @NotEmpty(message = "Debe ir descripcion de lo que aprendera el alumno")
         List<String> learningOutcomes,
-        @NotEmpty(message = "No puede estar vacia")
         @Valid
         List<SectionRequest> sectionList,
         @Valid

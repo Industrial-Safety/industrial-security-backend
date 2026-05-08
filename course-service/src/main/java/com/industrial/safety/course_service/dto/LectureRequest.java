@@ -4,7 +4,6 @@ import com.industrial.safety.course_service.model.component.Resource;
 import com.industrial.safety.course_service.model.enums.LectureType;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.URL;
 
@@ -20,7 +19,6 @@ public record LectureRequest (
         @Valid
         LectureType lectureType,
 
-        @NotBlank(message = "El url no puede estar vacio")
         @URL
         String contentUrl,
 
