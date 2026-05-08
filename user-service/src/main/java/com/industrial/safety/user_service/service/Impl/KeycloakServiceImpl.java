@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.keycloak.admin.client.CreatedResponseUtil;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.RealmResource;
+import org.keycloak.admin.client.resource.UserResource;
+import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
@@ -32,20 +34,30 @@ public class KeycloakServiceImpl implements KeycloakService {
         user.setLastName(userRequest.getLastName());
         user.setEnabled(true);
         user.setEmailVerified(true);
+        user.setRequiredActions(List.of());
 
-        // 2. Password
         CredentialRepresentation credential = new CredentialRepresentation();
         credential.setType(CredentialRepresentation.PASSWORD);
         credential.setValue(userRequest.getPassword());
         credential.setTemporary(false);
         user.setCredentials(List.of(credential));
 
-        // 3. Crear en Keycloak
         RealmResource realmResource = keycloak.realm(realm);
         Response response = realmResource.users().create(user);
+
+        int status = response.getStatus();
+
+        if (status == 409) {
+            throw new UserAlreadyExistsInKeycloakException("Usuario ya existe en Keycloak: " + userRequest.getEmail());
+        }
+
+        if (status < 200 || status >= 300) {
+            String body = response.readEntity(String.class);
+            throw new RuntimeException("Error creando usuario en Keycloak. Status: " + status + " - " + body);
+        }
+
         String keycloakId = CreatedResponseUtil.getCreatedId(response);
 
-        // 4. Asignar rol
         RoleRepresentation role = realmResource.roles()
                 .get(userRequest.getRole())
                 .toRepresentation();
@@ -57,6 +69,7 @@ public class KeycloakServiceImpl implements KeycloakService {
 
         return keycloakId;
     }
+
     @Override
     public String getUserIdByEmail(String email) {
         List<UserRepresentation> users = keycloak.realm(realm)
@@ -67,8 +80,9 @@ public class KeycloakServiceImpl implements KeycloakService {
             return users.get(0).getId();
         }
 
-        throw new RuntimeException("No se encontró al usuario con email: " + email);
+        throw new RuntimeException("No se encontro al usuario con email: " + email);
     }
+
     @Override
     public void assignRole(String keycloakId, String roleName) {
         RealmResource realmResource = keycloak.realm(realm);
@@ -76,4 +90,24 @@ public class KeycloakServiceImpl implements KeycloakService {
         realmResource.users().get(keycloakId).roles().realmLevel().add(List.of(role));
     }
 
+    @Override
+    public void updatePassword(String userId, String newPassword) {
+        UserResource userResource = getUsersResource().get(userId);
+        CredentialRepresentation passwordCred = new CredentialRepresentation();
+        passwordCred.setType(CredentialRepresentation.PASSWORD);
+        passwordCred.setValue(newPassword);
+        passwordCred.setTemporary(false);
+        userResource.resetPassword(passwordCred);
+        System.out.println("Contrasena actualizada exitosamente para el usuario: " + userId);
+    }
+
+    private UsersResource getUsersResource() {
+        return keycloak.realm(realm).users();
+    }
+
+    public static class UserAlreadyExistsInKeycloakException extends RuntimeException {
+        public UserAlreadyExistsInKeycloakException(String message) {
+            super(message);
+        }
+    }
 }

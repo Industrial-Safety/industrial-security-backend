@@ -23,39 +23,81 @@ public class SecurityConfig {
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity serverHttpSecurity){
         serverHttpSecurity.csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .cors(Customizer.withDefaults())
                 .authorizeExchange(authorizeExchangeSpec -> authorizeExchangeSpec
                         .pathMatchers("/eureka/**").permitAll()
+
+                        // Course - GET público, escritura requiere rol
+                        .pathMatchers(HttpMethod.GET, "/api/v1/course").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/api/v1/course/my-courses").hasAnyRole(
+                                Role.INSTRUCTOR.name(), Role.ADMINISTRADOR.name()
+                        )
+                        .pathMatchers(HttpMethod.GET, "/api/v1/course/**").permitAll()
+                        .pathMatchers(HttpMethod.POST, "/api/v1/course/**").hasAnyRole(
+                                Role.INSTRUCTOR.name(), Role.ADMINISTRADOR.name()
+                        )
+                        .pathMatchers(HttpMethod.PUT, "/api/v1/course/**").hasAnyRole(
+                                Role.INSTRUCTOR.name(), Role.ADMINISTRADOR.name()
+                        )
+                        .pathMatchers(HttpMethod.DELETE, "/api/v1/course/**").hasAnyRole(
+                                Role.INSTRUCTOR.name(), Role.ADMINISTRADOR.name()
+                        )
+
+                        // Storage
                         .pathMatchers(HttpMethod.GET, "/api/v1/storage/upload-url").hasAnyRole(
-                                Role.ALUMNO.name(), Role.INSTRUCTOR.name()
+                                Role.ALUMNO.name(), Role.INSTRUCTOR.name(), Role.ADMINISTRADOR.name()
                         )
-                        .pathMatchers(HttpMethod.POST,"/api/v1/course/**").hasRole(Role.INSTRUCTOR.name())
-                        .pathMatchers(HttpMethod.GET,"/api/v1/course/**").hasAnyRole(
-                                Role.ALUMNO.name(),
-                                Role.MARKETING.name(),
-                                Role.TRABAJADOR.name(),
-                                Role.INSTRUCTOR.name()
+                        .pathMatchers(HttpMethod.GET, "/api/v1/storage/upload-url/cover").hasAnyRole(
+                                Role.INSTRUCTOR.name(), Role.ADMINISTRADOR.name()
                         )
+
+                        // Users - especificos primero, wildcards al final
                         .pathMatchers(HttpMethod.POST, "/api/v1/users/register").permitAll()
-
-                        .pathMatchers(HttpMethod.GET, "/api/v1/users/{id}").hasAnyRole(
-                                Role.ALUMNO.name(), Role.ADMINISTRADOR.name()
+                        .pathMatchers(HttpMethod.POST, "/api/v1/users/change-password").hasAnyRole(
+                                Role.ALUMNO.name(),
+                                Role.ADMINISTRADOR.name(),
+                                Role.INSTRUCTOR.name(),
+                                Role.TRABAJADOR.name(),
+                                Role.MARKETING.name(),
+                                Role.JEFE_SEGURIDAD.name(),
+                                Role.GERENCIA_GENERAL.name(),
+                                Role.LOGISTICA_ALMACEN.name()
                         )
-
-                        .pathMatchers(HttpMethod.GET,"/api/v1/users/**").hasAnyRole(
+                        .pathMatchers(HttpMethod.GET, "/api/v1/users/by-email").hasAnyRole(
+                                Role.ALUMNO.name(), Role.ADMINISTRADOR.name(), Role.INSTRUCTOR.name(),
+                                Role.TRABAJADOR.name(), Role.MARKETING.name(), Role.JEFE_SEGURIDAD.name(),
+                                Role.GERENCIA_GENERAL.name(), Role.LOGISTICA_ALMACEN.name()
+                        )
+                        .pathMatchers(HttpMethod.PUT, "/api/v1/users/admin/{id}").hasAnyRole(
+                                Role.ADMINISTRADOR.name(),
+                                Role.INSTRUCTOR.name(),
+                                Role.ALUMNO.name(),
+                                Role.TRABAJADOR.name()
+                        )
+                        .pathMatchers(HttpMethod.GET, "/api/v1/users/{id}").hasAnyRole(
+                                Role.ALUMNO.name(), Role.ADMINISTRADOR.name(), Role.INSTRUCTOR.name(),
+                                Role.TRABAJADOR.name(), Role.MARKETING.name(), Role.JEFE_SEGURIDAD.name(),
+                                Role.GERENCIA_GENERAL.name(), Role.LOGISTICA_ALMACEN.name()
+                        )
+                        .pathMatchers(HttpMethod.PUT, "/api/v1/users/{id}").hasAnyRole(
+                                Role.ALUMNO.name(), Role.ADMINISTRADOR.name(), Role.INSTRUCTOR.name(),
+                                Role.TRABAJADOR.name(), Role.MARKETING.name(), Role.JEFE_SEGURIDAD.name(),
+                                Role.GERENCIA_GENERAL.name(), Role.LOGISTICA_ALMACEN.name()
+                        )
+                        .pathMatchers(HttpMethod.GET, "/api/v1/users/**").hasAnyRole(
+                                Role.ADMINISTRADOR.name()
+                        )
+                        .pathMatchers(HttpMethod.POST, "/api/v1/users/**").hasAnyRole(
                                 Role.ADMINISTRADOR.name()
                         )
 
-                        .pathMatchers(HttpMethod.PUT, "/api/v1/users/{id}").hasAnyRole(
-                                Role.ALUMNO.name(), Role.ADMINISTRADOR.name()
-                        )
-                        .pathMatchers(HttpMethod.PUT, "/api/v1/users/**").hasRole(Role.ADMINISTRADOR.name())
-
                         .anyExchange().authenticated())
                 .oauth2Login(Customizer.withDefaults())
-                .oauth2ResourceServer(o->o
+                .oauth2ResourceServer(o -> o
                         .jwt(jwtSpec -> jwtSpec.jwtAuthenticationConverter(reactiveJwtAuthenticationConverterAdapter())));
         return serverHttpSecurity.build();
     }
+
     /*private ReactiveJwtAuthenticationConverterAdapter reactiveJwtAuthenticationConverterAdapter(){
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter(); //creamos el converitor
         converter.setJwtGrantedAuthoritiesConverter(j->
