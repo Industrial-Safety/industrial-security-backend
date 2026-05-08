@@ -4,7 +4,6 @@ import com.industrial.safety.course_service.service.StorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import software.amazon.awssdk.services.s3.model.PutObjectAclRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
@@ -22,11 +21,17 @@ public class StorageServiceImpl implements StorageService {
     @Value("${aws.s3.bucket-name}")
     private String bucketName;
 
-
     @Override
     public Map<String, String> generatePresignedUrl(String fileName, String contentType) {
-        String key = "safety-videos/" + fileName;
+        return buildPresignedUrl("safety-videos/" + fileName, contentType);
+    }
 
+    @Override
+    public Map<String, String> generateCoverPresignedUrl(String fileName, String contentType) {
+        return buildPresignedUrl("courses/covers/" + fileName, contentType);
+    }
+
+    private Map<String, String> buildPresignedUrl(String key, String contentType) {
         PutObjectRequest objectRequest = PutObjectRequest.builder()
                 .bucket(bucketName)
                 .key(key)
