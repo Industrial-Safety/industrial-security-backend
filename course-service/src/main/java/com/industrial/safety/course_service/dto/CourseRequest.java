@@ -17,8 +17,7 @@ public record CourseRequest (
         String title,
         @NotBlank(message = "El subtitulo no pueda estar vacio")
         String subtitle,
-        @NotNull
-        @Valid
+
         Teacher teacher,
         @NotNull
         @Valid
