@@ -5,7 +5,6 @@ import com.industrial.safety.course_service.model.enums.LectureType;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import org.hibernate.validator.constraints.URL;
 
 import java.util.List;
 
@@ -19,7 +18,6 @@ public record LectureRequest (
         @Valid
         LectureType lectureType,
 
-        @URL
         String contentUrl,
 
         @NotNull(message = "Debe especificar si la lección es una vista previa")
