@@ -35,7 +35,9 @@ public class WebAlertService {
                 "timestamp", Instant.now().toString()
         );
         String destination = TOPIC_PREFIX + alert.targetUserId();
-        messagingTemplate.convertAndSend(destination, payload);
+        // Cast to Object to disambiguate from convertAndSend(Object, Map<String,Object>)
+        // — both overloads match a Map payload otherwise.
+        messagingTemplate.convertAndSend(destination, (Object) payload);
         log.info("[ws] Pushed alert to {} success={}", destination, success);
     }
 }
