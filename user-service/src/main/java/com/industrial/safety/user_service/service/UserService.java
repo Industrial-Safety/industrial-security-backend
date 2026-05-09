@@ -15,5 +15,5 @@ public interface UserService
     UserResponse getUserByEmail(String email);
     UserResponse updateUser(String id, UserRequest userRequest);
     UserResponse updateUserAdmin(String id, UserUpdateRequest userUpdateRequest);
-    void changePassword(String keycloakId, String newPassword);
+    void changePassword(String keycloakId, String email, String newPassword);
 }
