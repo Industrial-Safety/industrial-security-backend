@@ -3,43 +3,83 @@ package com.industrial.safety.notification_service.config;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import javax.swing.plaf.PanelUI;
-
 @Configuration
-public class RabbitMQConfig
-{
+public class RabbitMQConfig {
+
     public static final String PLATFORM_EXCHANGE = "industrial.safety.topic";
+    public static final String DLX_EXCHANGE = "industrial.safety.dlx";
+
     public static final String EMAIL_QUEUE = "notification.email.queue";
+    public static final String EMAIL_DLQ = "notification.email.dlq";
+
     public static final String WS_ALERT_QUEUE = "notification.ws.alert.queue";
+    public static final String WS_ALERT_DLQ = "notification.ws.alert.dlq";
 
     @Bean
-    public MessageConverter jsonMesssageConverter(){
+    MessageConverter jsonMessageConverter() {
         return new JacksonJsonMessageConverter();
     }
+
     @Bean
-    public TopicExchange plataformExchange(){
-        return new TopicExchange(PLATFORM_EXCHANGE);
+    TopicExchange platformExchange() {
+        return new TopicExchange(PLATFORM_EXCHANGE, true, false);
     }
+
     @Bean
-    public Queue emailQueue(){
-        return new Queue(EMAIL_QUEUE,true);
+    TopicExchange deadLetterExchange() {
+        return new TopicExchange(DLX_EXCHANGE, true, false);
     }
+
     @Bean
-    public Queue wsAlertQueue(){
-        return new Queue(WS_ALERT_QUEUE,true);
+    Queue emailQueue() {
+        return QueueBuilder.durable(EMAIL_QUEUE)
+                .withArgument("x-dead-letter-exchange", DLX_EXCHANGE)
+                .withArgument("x-dead-letter-routing-key", EMAIL_DLQ)
+                .build();
     }
+
     @Bean
-    public Binding emailBinding(Queue emailQueue, TopicExchange plataformExchange){
-        return BindingBuilder.bind(emailQueue).to(plataformExchange).with("event.email.#");
+    Queue emailDeadLetterQueue() {
+        return QueueBuilder.durable(EMAIL_DLQ).build();
     }
+
     @Bean
-    public Binding wsAlertBinding(Queue wsAlertQueue, TopicExchange platformExchange) {
+    Queue wsAlertQueue() {
+        return QueueBuilder.durable(WS_ALERT_QUEUE)
+                .withArgument("x-dead-letter-exchange", DLX_EXCHANGE)
+                .withArgument("x-dead-letter-routing-key", WS_ALERT_DLQ)
+                .build();
+    }
+
+    @Bean
+    Queue wsAlertDeadLetterQueue() {
+        return QueueBuilder.durable(WS_ALERT_DLQ).build();
+    }
+
+    @Bean
+    Binding emailBinding(Queue emailQueue, TopicExchange platformExchange) {
+        return BindingBuilder.bind(emailQueue).to(platformExchange).with("event.email.#");
+    }
+
+    @Bean
+    Binding wsAlertBinding(Queue wsAlertQueue, TopicExchange platformExchange) {
         return BindingBuilder.bind(wsAlertQueue).to(platformExchange).with("event.alert.#");
+    }
+
+    @Bean
+    Binding emailDlqBinding(Queue emailDeadLetterQueue, TopicExchange deadLetterExchange) {
+        return BindingBuilder.bind(emailDeadLetterQueue).to(deadLetterExchange).with(EMAIL_DLQ);
+    }
+
+    @Bean
+    Binding wsAlertDlqBinding(Queue wsAlertDeadLetterQueue, TopicExchange deadLetterExchange) {
+        return BindingBuilder.bind(wsAlertDeadLetterQueue).to(deadLetterExchange).with(WS_ALERT_DLQ);
     }
 }
