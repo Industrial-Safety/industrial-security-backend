@@ -75,17 +75,20 @@ public class UserController
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("message", "Faltan datos obligatorios (userId o newPassword)"));
         }
+        String email = request.get("email");
         try {
-            userService.changePassword(userId, newPassword);
+            userService.changePassword(userId, email, newPassword);
             return ResponseEntity.ok(Map.of(
                     "status", "success",
                     "message", "Contrasena actualizada con exito"
             ));
         } catch (Exception e) {
+            System.err.println("ERROR [changePassword] userId=" + userId + " | " + e.getClass().getSimpleName() + ": " + e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of(
                             "status", "error",
-                            "message", "La nueva contrasena no cumple con las politicas de seguridad."
+                            "message", "La nueva contrasena no cumple con las politicas de seguridad.",
+                            "debug", e.getClass().getSimpleName() + ": " + e.getMessage()
                     ));
         }
     }

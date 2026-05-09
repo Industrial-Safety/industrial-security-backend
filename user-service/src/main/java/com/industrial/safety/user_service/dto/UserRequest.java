@@ -28,4 +28,6 @@ public class UserRequest
 
     @NotBlank(message = "La contraseña no puede ser null")
     private String password;
+
+    private String keycloakId;
 }

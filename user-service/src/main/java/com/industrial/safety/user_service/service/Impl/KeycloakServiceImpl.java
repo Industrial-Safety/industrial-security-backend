@@ -59,7 +59,7 @@ public class KeycloakServiceImpl implements KeycloakService {
         String keycloakId = CreatedResponseUtil.getCreatedId(response);
 
         RoleRepresentation role = realmResource.roles()
-                .get(userRequest.getRole())
+                .get(toKeycloakRoleName(userRequest.getRole()))
                 .toRepresentation();
         realmResource.users()
                 .get(keycloakId)
@@ -86,7 +86,7 @@ public class KeycloakServiceImpl implements KeycloakService {
     @Override
     public void assignRole(String keycloakId, String roleName) {
         RealmResource realmResource = keycloak.realm(realm);
-        RoleRepresentation role = realmResource.roles().get(roleName).toRepresentation();
+        RoleRepresentation role = realmResource.roles().get(toKeycloakRoleName(roleName)).toRepresentation();
         realmResource.users().get(keycloakId).roles().realmLevel().add(List.of(role));
     }
 
@@ -99,6 +99,10 @@ public class KeycloakServiceImpl implements KeycloakService {
         passwordCred.setTemporary(false);
         userResource.resetPassword(passwordCred);
         System.out.println("Contrasena actualizada exitosamente para el usuario: " + userId);
+    }
+
+    private String toKeycloakRoleName(String roleName) {
+        return roleName != null && roleName.startsWith("ROLE_") ? roleName.substring(5) : roleName;
     }
 
     private UsersResource getUsersResource() {

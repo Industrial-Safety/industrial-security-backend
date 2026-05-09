@@ -1,4 +1,4 @@
-package com.ecommerce.order_service.exception;
+package com.industrial.safety.order_service.exception;
 
 import lombok.Getter;
 
