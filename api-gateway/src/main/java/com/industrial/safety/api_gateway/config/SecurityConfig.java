@@ -26,6 +26,8 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .authorizeExchange(authorizeExchangeSpec -> authorizeExchangeSpec
                         .pathMatchers("/eureka/**").permitAll()
+                        // Actuator expuesto para diagnóstico local (gateway routes, health, etc.)
+                        .pathMatchers("/actuator/**").permitAll()
 
                         // Course - GET público, escritura requiere rol
                         .pathMatchers(HttpMethod.GET, "/api/v1/course").permitAll()
@@ -81,6 +83,17 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.POST, "/api/v1/users/**").hasAnyRole(
                                 Role.ADMINISTRADOR.name()
                         )
+
+                        // Orders - cualquier usuario autenticado (el rol se asigna async tras OAuth signup)
+                        .pathMatchers(HttpMethod.POST, "/api/v1/orders").authenticated()
+                        .pathMatchers(HttpMethod.GET, "/api/v1/orders/**").authenticated()
+                        .pathMatchers(HttpMethod.DELETE, "/api/v1/orders/**").authenticated()
+
+                        // Payments - webhook MP es público (entra sin JWT), recibos también públicos
+                        // (el link del email tiene que abrirse sin login)
+                        .pathMatchers(HttpMethod.POST, "/api/v1/payments/webhook").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/api/v1/payments/receipts/**").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/api/v1/payments/**").authenticated()
 
                         .anyExchange().authenticated())
                 .oauth2Login(Customizer.withDefaults())

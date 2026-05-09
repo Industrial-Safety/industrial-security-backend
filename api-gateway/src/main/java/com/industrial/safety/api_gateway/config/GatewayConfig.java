@@ -17,6 +17,18 @@ public class GatewayConfig {
                 .route("user-service", c->c
                         .path("/api/v1/users/**")
                         .uri("lb://USER-SERVICE"))
+                .route("order-service", c->c
+                        .path("/api/v1/orders","/api/v1/orders/**")
+                        .uri("lb://ORDER-SERVICE"))
+                .route("payment-receipts", c->c
+                        .path("/api/v1/payments/receipts/**")
+                        .uri("lb://PAYMENT-SERVICE"))
+                .route("payment-service", c->c
+                        .path("/api/v1/payments","/api/v1/payments/**")
+                        .uri("lb://PAYMENT-SERVICE"))
+                .route("notification-ws", c->c
+                        .path("/ws/**")
+                        .uri("lb:ws://NOTIFICATION-SERVICE"))
                 .build();
     }
 }
