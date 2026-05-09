@@ -16,8 +16,11 @@ public class UserRequest
     @NotBlank(message = "El nombre no puede ser  null")
     private String lastName;
 
+    private String dni;
+    private String cellphone;
     @NotBlank(message = "El rol no puede ser null")
     private String role;
+
     private String urlPhoto;
     @NotBlank(message = "El email no puede ser nullo")
     @Email
@@ -25,4 +28,6 @@ public class UserRequest
 
     @NotBlank(message = "La contraseña no puede ser null")
     private String password;
+
+    private String keycloakId;
 }

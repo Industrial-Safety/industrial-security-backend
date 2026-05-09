@@ -1,6 +1,5 @@
 package com.industrial.safety.course_service.model;
 
-
 import com.industrial.safety.course_service.model.component.Section;
 import com.industrial.safety.course_service.model.record.Details;
 import com.industrial.safety.course_service.model.record.Review;
@@ -11,7 +10,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-
 
 import java.util.List;
 
@@ -26,6 +24,7 @@ public class Course
     private String id;
     private String title;
     private String subtitle;
+    private String coverImageUrl;
     private Teacher teacher;
     private Details details;
     private List<String> requirements;
