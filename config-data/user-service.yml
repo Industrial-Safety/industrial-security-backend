@@ -14,9 +14,17 @@ spring:
   application:
     name: user-service
   datasource:
-    url: jdbc:postgresql://localhost:5435/user-db
+    url: jdbc:postgresql://localhost:5435/user-db?tcpKeepAlive=true
     username: admin
     password: admin
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      max-lifetime: 240000        # 4 min — rota antes de que docker/postgres maten la conexión
+      idle-timeout: 120000        # 2 min idle y cerramos
+      keepalive-time: 60000       # ping cada 60s a las conexiones idle
+      connection-test-query: SELECT 1
+      validation-timeout: 3000
   jpa:
     hibernate:
       ddl-auto: update

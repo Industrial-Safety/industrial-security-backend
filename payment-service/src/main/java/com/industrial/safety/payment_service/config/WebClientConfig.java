@@ -1,6 +1,6 @@
 package com.industrial.safety.payment_service.config;
 
-import com.industrial.safety.payment_service.config.properties.StripeProperties;
+import com.industrial.safety.payment_service.config.properties.MercadoPagoProperties;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
@@ -18,8 +18,8 @@ import java.util.concurrent.TimeUnit;
 @Configuration
 public class WebClientConfig {
 
-    @Bean(name = "stripeWebClient")
-    WebClient stripeWebClient(StripeProperties props) {
+    @Bean(name = "mercadoPagoWebClient")
+    WebClient mercadoPagoWebClient(MercadoPagoProperties props) {
         HttpClient httpClient = HttpClient.create()
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, props.api().timeoutMillis())
                 .responseTimeout(Duration.ofMillis(props.api().timeoutMillis()))
@@ -30,8 +30,7 @@ public class WebClientConfig {
         return WebClient.builder()
                 .baseUrl(props.api().baseUrl())
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
-                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + props.api().secretKey())
-                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + props.api().accessToken())
                 .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
                 .build();
     }

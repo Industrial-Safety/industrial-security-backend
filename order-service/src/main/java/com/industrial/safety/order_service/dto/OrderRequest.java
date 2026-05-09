@@ -25,8 +25,29 @@ public class OrderRequest {
 
     private String currency;
 
-    /** Token from Stripe.js / simulator (e.g., "pm_card_visa" or raw 4242 for the simulator). */
-    private String paymentMethodToken;
+    /** Card token returned by MercadoPago Payment Brick onSubmit (ephemeral, single-use). */
+    @NotBlank
+    private String mpToken;
+
+    /** e.g. "visa", "master", "amex" — also from the Brick payload. */
+    @NotBlank
+    private String mpPaymentMethodId;
+
+    /** 1 by default; the Brick exposes installment options and returns the chosen value. */
+    private Integer mpInstallments;
+
+    /** Optional issuer id supplied by the Brick when relevant. */
+    private String mpIssuerId;
+
+    /** Buyer email captured by the Brick (may differ from session email). */
+    @Email
+    private String mpPayerEmail;
+
+    /** Buyer doc type (DNI, CE, RUC, etc.) captured by the Brick. */
+    private String mpPayerIdType;
+
+    /** Buyer doc number captured by the Brick. */
+    private String mpPayerIdNumber;
 
     @NotEmpty
     @Valid
