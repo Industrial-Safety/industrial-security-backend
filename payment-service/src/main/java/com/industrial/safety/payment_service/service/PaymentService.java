@@ -2,7 +2,7 @@ package com.industrial.safety.payment_service.service;
 
 import com.industrial.safety.payment_service.dto.PaymentResponse;
 import com.industrial.safety.payment_service.dto.event.OrderCreatedEvent;
-import com.industrial.safety.payment_service.dto.stripe.StripeWebhookEvent;
+import com.industrial.safety.payment_service.dto.mercadopago.MercadoPagoWebhookEvent;
 
 public interface PaymentService {
 
@@ -10,5 +10,5 @@ public interface PaymentService {
 
     PaymentResponse getByOrderNumber(String orderNumber);
 
-    void handleWebhook(StripeWebhookEvent event);
+    void handleWebhook(MercadoPagoWebhookEvent event);
 }

@@ -68,7 +68,7 @@ public class OrderServiceImpl implements OrderService {
         Order saved = orderRepository.save(order);
         log.info("Order persisted as PENDING: {}", saved.getOrderNumber());
 
-        orderEventPublisher.publishOrderCreated(toOrderCreatedEvent(saved, request.getPaymentMethodToken()));
+        orderEventPublisher.publishOrderCreated(toOrderCreatedEvent(saved, request));
         return orderMapper.toResponse(saved);
     }
 
@@ -202,7 +202,7 @@ public class OrderServiceImpl implements OrderService {
         ), false);
     }
 
-    private OrderCreatedEvent toOrderCreatedEvent(Order order, String paymentMethodToken) {
+    private OrderCreatedEvent toOrderCreatedEvent(Order order, OrderRequest request) {
         List<OrderItemEvent> items = order.getOrderLineItemsList() == null ? List.of() :
                 order.getOrderLineItemsList().stream()
                         .map(li -> new OrderItemEvent(li.getIdCurso(), li.getCourseName(), li.getPrice()))
@@ -211,7 +211,13 @@ public class OrderServiceImpl implements OrderService {
                 order.getOrderNumber(),
                 order.getUserId(),
                 order.getUserEmail(),
-                paymentMethodToken,
+                request.getMpToken(),
+                request.getMpPaymentMethodId(),
+                request.getMpInstallments(),
+                request.getMpIssuerId(),
+                request.getMpPayerEmail(),
+                request.getMpPayerIdType(),
+                request.getMpPayerIdNumber(),
                 order.getCurrency(),
                 order.getTotalAmount(),
                 items,

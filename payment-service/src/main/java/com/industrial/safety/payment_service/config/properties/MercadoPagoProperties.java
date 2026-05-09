@@ -6,21 +6,18 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 @Validated
-@ConfigurationProperties(prefix = "stripe")
-public record StripeProperties(
+@ConfigurationProperties(prefix = "mercadopago")
+public record MercadoPagoProperties(
         @NotNull Api api,
-        @NotNull Simulator simulator
+        Webhook webhook
 ) {
     public record Api(
             @NotBlank String baseUrl,
-            @NotBlank String secretKey,
-            @NotBlank String webhookSecret,
+            @NotBlank String accessToken,
             int timeoutMillis
     ) {}
 
-    public record Simulator(
-            boolean enabled,
-            @NotBlank String successCard,
-            @NotBlank String declineCard
+    public record Webhook(
+            String secret
     ) {}
 }

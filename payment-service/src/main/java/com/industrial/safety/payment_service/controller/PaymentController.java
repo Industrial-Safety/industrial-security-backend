@@ -1,9 +1,9 @@
 package com.industrial.safety.payment_service.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.industrial.safety.payment_service.client.StripeClient;
+import com.industrial.safety.payment_service.client.MercadoPagoClient;
 import com.industrial.safety.payment_service.dto.PaymentResponse;
-import com.industrial.safety.payment_service.dto.stripe.StripeWebhookEvent;
+import com.industrial.safety.payment_service.dto.mercadopago.MercadoPagoWebhookEvent;
 import com.industrial.safety.payment_service.exception.InvalidWebhookSignatureException;
 import com.industrial.safety.payment_service.service.PaymentService;
 import lombok.RequiredArgsConstructor;
@@ -27,9 +27,10 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class PaymentController {
 
-    private static final String STRIPE_SIGNATURE_HEADER = "Stripe-Signature";
+    private static final String MP_SIGNATURE_HEADER = "x-signature";
+
     private final PaymentService paymentService;
-    private final StripeClient stripeClient;
+    private final MercadoPagoClient mercadoPagoClient;
     private final ObjectMapper objectMapper;
 
     @GetMapping("/{orderNumber}")
@@ -39,12 +40,12 @@ public class PaymentController {
 
     @PostMapping(value = "/webhook", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Void> webhook(@RequestBody String rawBody,
-                                        @RequestHeader(value = STRIPE_SIGNATURE_HEADER, required = false) String signature) throws IOException {
-        if (!stripeClient.isValidSignature(rawBody, signature)) {
-            throw new InvalidWebhookSignatureException("Stripe webhook signature mismatch");
+                                        @RequestHeader(value = MP_SIGNATURE_HEADER, required = false) String signature) throws IOException {
+        if (!mercadoPagoClient.isValidWebhookSignature(rawBody, signature)) {
+            throw new InvalidWebhookSignatureException("MercadoPago webhook signature mismatch");
         }
-        StripeWebhookEvent event = objectMapper.readValue(rawBody, StripeWebhookEvent.class);
-        log.info("Webhook received: id={} type={}", event.id(), event.type());
+        MercadoPagoWebhookEvent event = objectMapper.readValue(rawBody, MercadoPagoWebhookEvent.class);
+        log.info("Webhook received: id={} type={} action={}", event.id(), event.type(), event.action());
         paymentService.handleWebhook(event);
         return ResponseEntity.status(HttpStatus.OK).build();
     }

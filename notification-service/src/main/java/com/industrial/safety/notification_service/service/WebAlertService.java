@@ -14,7 +14,12 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class WebAlertService {
 
-    public static final String USER_TOPIC = "/topic/notifications";
+    /**
+     * Public per-user topic. We publish to "/topic/notifications/{userId}" instead of
+     * convertAndSendToUser so the frontend can subscribe by userId without the STOMP
+     * Principal/auth wiring (we don't authenticate the WebSocket handshake yet).
+     */
+    public static final String TOPIC_PREFIX = "/topic/notifications/";
 
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -29,7 +34,8 @@ public class WebAlertService {
                 "success", success,
                 "timestamp", Instant.now().toString()
         );
-        messagingTemplate.convertAndSendToUser(alert.targetUserId(), USER_TOPIC, payload);
-        log.info("[ws] Pushed alert to user {} success={}", alert.targetUserId(), success);
+        String destination = TOPIC_PREFIX + alert.targetUserId();
+        messagingTemplate.convertAndSend(destination, payload);
+        log.info("[ws] Pushed alert to {} success={}", destination, success);
     }
 }

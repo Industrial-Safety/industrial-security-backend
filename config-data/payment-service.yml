@@ -48,16 +48,15 @@ spring:
         jwt:
           issuer-uri: http://localhost:9090/realms/industrial-safety
 
-stripe:
+mercadopago:
   api:
-    base-url: ${STRIPE_BASE_URL:https://api.stripe.com}
-    secret-key: ${STRIPE_SECRET_KEY:sk_test_simulator_4242}
-    webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_simulator_local}
-    timeout-millis: 5000
-  simulator:
-    enabled: true
-    success-card: "4242424242424242"
-    decline-card: "4000000000000002"
+    base-url: ${MP_BASE_URL:https://api.mercadopago.com}
+    # Access token de TEST. Override con env var MP_ACCESS_TOKEN cuando despliegues a otro entorno.
+    access-token: ${MP_ACCESS_TOKEN:TEST-3272864297327696-050911-3909d5bdb3801656d924e69534cd56a0-645123561}
+    timeout-millis: 8000
+  webhook:
+    # Opcional: secreto del webhook desde MP > Webhooks > tu URL > Secret. Si está vacío, no se valida firma.
+    secret: ${MP_WEBHOOK_SECRET:}
 
 receipt:
   storage:
@@ -67,7 +66,7 @@ receipt:
 resilience4j:
   circuitbreaker:
     instances:
-      stripe:
+      mercadopago:
         sliding-window-size: 20
         failure-rate-threshold: 50
         wait-duration-in-open-state: 10s
@@ -75,7 +74,7 @@ resilience4j:
         register-health-indicator: true
   retry:
     instances:
-      stripe:
+      mercadopago:
         max-attempts: 3
         wait-duration: 500ms
         exponential-backoff-multiplier: 2
