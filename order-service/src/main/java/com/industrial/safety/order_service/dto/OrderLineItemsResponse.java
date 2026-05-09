@@ -6,14 +6,15 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+
 @Data
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
-public class OrderLineItemsResponse
-{
+public class OrderLineItemsResponse {
+
     private Long id;
     private String idCurso;
+    private String courseName;
     private BigDecimal price;
-
 }

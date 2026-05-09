@@ -44,7 +44,11 @@ public class UserServiceImpl implements UserService {
         }
 
         String keycloakId;
-        boolean createdByAdmin = !userRequest.getPassword().equals("oauth_user_password");
+        // If the caller explicitly sets mustChangePassword (e.g. registerStudent sets it to false),
+        // use that value; otherwise fall back to detecting admin creation from the password.
+        boolean createdByAdmin = userRequest.getMustChangePassword() != null
+                ? userRequest.getMustChangePassword()
+                : !userRequest.getPassword().equals("oauth_user_password");
 
         // Si el frontend ya provee keycloakId, el usuario existe en Keycloak — usar directo, sin llamar Admin API
         if (userRequest.getKeycloakId() != null && !userRequest.getKeycloakId().isBlank()) {
