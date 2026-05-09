@@ -1,6 +1,5 @@
 package com.industrial.safety.payment_service.pdf;
 
-import com.industrial.safety.payment_service.config.properties.ReceiptProperties;
 import com.industrial.safety.payment_service.domain.Payment;
 import com.industrial.safety.payment_service.dto.event.OrderItemEvent;
 import com.industrial.safety.payment_service.exception.PaymentProcessingException;
@@ -15,14 +14,21 @@ import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 
 import java.awt.Color;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.math.RoundingMode;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -37,33 +43,68 @@ public class ReceiptPdfGenerator {
             .ofPattern("yyyy-MM-dd HH:mm:ss")
             .withZone(ZoneId.systemDefault());
 
-    private final ReceiptProperties properties;
+    private static final String S3_KEY_PREFIX = "receipts/";
+    private static final Duration PRESIGNED_URL_TTL = Duration.ofDays(7);
 
-    public Path generate(Payment payment, List<OrderItemEvent> items) {
+    private final S3Client s3Client;
+    private final S3Presigner s3Presigner;
+
+    @Value("${aws.s3.bucket-name}")
+    private String bucketName;
+
+    /**
+     * Builds the PDF in memory, uploads it to S3 under receipts/{orderNumber}.pdf,
+     * and returns a presigned GET URL valid for {@link #PRESIGNED_URL_TTL}.
+     */
+    public String generateAndUpload(Payment payment, List<OrderItemEvent> items) {
+        byte[] pdfBytes = renderPdf(payment, items);
+        String key = S3_KEY_PREFIX + payment.getOrderNumber() + ".pdf";
+
         try {
-            Path outputDir = Path.of(properties.storage().outputDir()).toAbsolutePath();
-            Files.createDirectories(outputDir);
-            Path file = outputDir.resolve(payment.getOrderNumber() + ".pdf");
-
-            try (OutputStream os = Files.newOutputStream(file);
-                 Document document = new Document()) {
-                PdfWriter.getInstance(document, os);
-                document.open();
-                writeHeader(document, payment);
-                writeItemTable(document, items);
-                writeFooter(document, payment);
-            }
-            log.info("Receipt PDF generated for orderNumber={} at {}", payment.getOrderNumber(), file);
-            return file;
-        } catch (IOException ex) {
-            throw new PaymentProcessingException("receipt_io_error",
-                    "Failed to write receipt PDF for order " + payment.getOrderNumber(), ex);
+            PutObjectRequest putRequest = PutObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(key)
+                    .contentType("application/pdf")
+                    .contentDisposition("inline; filename=\"" + payment.getOrderNumber() + ".pdf\"")
+                    .build();
+            s3Client.putObject(putRequest, RequestBody.fromBytes(pdfBytes));
+            log.info("Receipt PDF uploaded to s3://{}/{} ({} bytes)",
+                    bucketName, key, pdfBytes.length);
+        } catch (RuntimeException ex) {
+            throw new PaymentProcessingException("receipt_s3_upload_failed",
+                    "Failed to upload receipt PDF to S3 for order " + payment.getOrderNumber(), ex);
         }
+
+        return buildPresignedUrl(key);
     }
 
-    public String buildPublicUrl(String orderNumber) {
-        String base = properties.storage().publicBaseUrl();
-        return (base.endsWith("/") ? base : base + "/") + orderNumber + ".pdf";
+    private String buildPresignedUrl(String key) {
+        GetObjectRequest getRequest = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(key)
+                .build();
+        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                .signatureDuration(PRESIGNED_URL_TTL)
+                .getObjectRequest(getRequest)
+                .build();
+        PresignedGetObjectRequest presigned = s3Presigner.presignGetObject(presignRequest);
+        return presigned.url().toExternalForm();
+    }
+
+    private byte[] renderPdf(Payment payment, List<OrderItemEvent> items) {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream();
+             Document document = new Document()) {
+            PdfWriter.getInstance(document, out);
+            document.open();
+            writeHeader(document, payment);
+            writeItemTable(document, items);
+            writeFooter(document, payment);
+            document.close();
+            return out.toByteArray();
+        } catch (IOException ex) {
+            throw new PaymentProcessingException("receipt_render_failed",
+                    "Failed to render receipt PDF for order " + payment.getOrderNumber(), ex);
+        }
     }
 
     private void writeHeader(Document document, Payment payment) {

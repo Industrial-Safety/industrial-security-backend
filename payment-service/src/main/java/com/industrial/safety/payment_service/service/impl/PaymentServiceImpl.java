@@ -195,8 +195,8 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setStatus(PaymentStatus.SUCCEEDED);
         payment.setPaidAt(Instant.now());
         payment.setFailureReason(null);
-        receiptPdfGenerator.generate(payment, items);
-        payment.setReceiptUrl(receiptPdfGenerator.buildPublicUrl(payment.getOrderNumber()));
+        String receiptUrl = receiptPdfGenerator.generateAndUpload(payment, items);
+        payment.setReceiptUrl(receiptUrl);
         Payment saved = paymentRepository.save(payment);
         paymentEventPublisher.publishResult(toResultEvent(saved, items, true, null));
         return paymentMapper.toResponse(saved);
@@ -217,8 +217,8 @@ public class PaymentServiceImpl implements PaymentService {
         }
         payment.setStatus(PaymentStatus.SUCCEEDED);
         payment.setPaidAt(Instant.now());
-        receiptPdfGenerator.generate(payment, List.of());
-        payment.setReceiptUrl(receiptPdfGenerator.buildPublicUrl(payment.getOrderNumber()));
+        String receiptUrl = receiptPdfGenerator.generateAndUpload(payment, List.of());
+        payment.setReceiptUrl(receiptUrl);
         paymentRepository.save(payment);
         paymentEventPublisher.publishResult(toResultEvent(payment, List.of(), true, null));
     }

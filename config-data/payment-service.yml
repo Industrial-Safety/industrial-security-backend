@@ -58,10 +58,22 @@ mercadopago:
     # Opcional: secreto del webhook desde MP > Webhooks > tu URL > Secret. Si está vacío, no se valida firma.
     secret: ${MP_WEBHOOK_SECRET:}
 
-receipt:
-  storage:
-    output-dir: ${RECEIPT_OUTPUT_DIR:./receipts}
-    public-base-url: ${RECEIPT_PUBLIC_BASE_URL:http://localhost:8083/api/v1/payments/receipts}
+cloud:
+  aws:
+    region:
+      static: ${AWS_REGION}
+    credentials:
+      access-key: ${AWS_ACCESS_KEY_ID}
+      secret-key: ${AWS_SECRET_ACCESS_KEY}
+    s3:
+      bucket-name: ${AWS_BUCKET_NAME}
+    stack:
+      auto: false
+
+aws:
+  s3:
+    bucket-name: ${AWS_BUCKET_NAME}
+  region: ${AWS_REGION}
 
 resilience4j:
   circuitbreaker:
