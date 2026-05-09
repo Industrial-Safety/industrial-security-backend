@@ -38,5 +38,25 @@ spring:
           uri: lb://user-service
           predicates:
             - Path=/api/v1/users/**
+        - id: order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/api/v1/orders/**
+        - id: payment-service
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/v1/payments/**
+        - id: payment-receipts
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/v1/payments/receipts/**
+        - id: notification-ws
+          uri: lb:ws://notification-service
+          predicates:
+            - Path=/ws/**
+        - id: notification-ws-sockjs
+          uri: lb://notification-service
+          predicates:
+            - Path=/ws-sockjs/**
 server:
   port: 9000
