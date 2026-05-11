@@ -50,6 +50,14 @@ spring:
           uri: lb://payment-service
           predicates:
             - Path=/api/v1/payments/receipts/**
+        - id: exam-service
+          uri: lb://exam-service
+          predicates:
+            - Path=/api/v1/exams,/api/v1/exams/**
+        - id: certificate-service
+          uri: lb://exam-service
+          predicates:
+            - Path=/api/v1/certificates,/api/v1/certificates/**
         - id: chat-service
           uri: lb://chat-service
           predicates:

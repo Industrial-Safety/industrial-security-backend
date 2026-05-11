@@ -22,6 +22,9 @@ public class RabbitMQConfig {
     public static final String WS_ALERT_QUEUE = "notification.ws.alert.queue";
     public static final String WS_ALERT_DLQ = "notification.ws.alert.dlq";
 
+    public static final String CERT_QUEUE = "notification.certificate.queue";
+    public static final String CERT_DLQ   = "notification.certificate.dlq";
+
     @Bean
     MessageConverter jsonMessageConverter() {
         return new JacksonJsonMessageConverter();
@@ -81,5 +84,28 @@ public class RabbitMQConfig {
     @Bean
     Binding wsAlertDlqBinding(Queue wsAlertDeadLetterQueue, TopicExchange deadLetterExchange) {
         return BindingBuilder.bind(wsAlertDeadLetterQueue).to(deadLetterExchange).with(WS_ALERT_DLQ);
+    }
+
+    @Bean
+    Queue certQueue() {
+        return QueueBuilder.durable(CERT_QUEUE)
+                .withArgument("x-dead-letter-exchange", DLX_EXCHANGE)
+                .withArgument("x-dead-letter-routing-key", CERT_DLQ)
+                .build();
+    }
+
+    @Bean
+    Queue certDeadLetterQueue() {
+        return QueueBuilder.durable(CERT_DLQ).build();
+    }
+
+    @Bean
+    Binding certBinding(Queue certQueue, TopicExchange platformExchange) {
+        return BindingBuilder.bind(certQueue).to(platformExchange).with("event.certificate.#");
+    }
+
+    @Bean
+    Binding certDlqBinding(Queue certDeadLetterQueue, TopicExchange deadLetterExchange) {
+        return BindingBuilder.bind(certDeadLetterQueue).to(deadLetterExchange).with(CERT_DLQ);
     }
 }

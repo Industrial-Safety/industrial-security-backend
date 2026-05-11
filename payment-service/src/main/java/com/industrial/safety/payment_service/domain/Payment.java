@@ -72,7 +72,7 @@ public class Payment {
     @Column(name = "failure_reason")
     private String failureReason;
 
-    @Column(name = "receipt_url")
+    @Column(name = "receipt_url", columnDefinition = "TEXT")
     private String receiptUrl;
 
     @Column(name = "created_at", nullable = false, updatable = false)
