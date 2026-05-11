@@ -35,7 +35,12 @@ public class UserController
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public UserResponse createUser(@Valid @RequestBody UserRequest userRequest) {
-        return userService.createUser(userRequest).user();
+        return userService.createUserAdmin(userRequest);
+    }
+
+    @PatchMapping("/{id}/toggle-status")
+    public ResponseEntity<UserResponse> toggleStatus(@PathVariable String id) {
+        return ResponseEntity.ok(userService.toggleStatus(id));
     }
 
     @GetMapping

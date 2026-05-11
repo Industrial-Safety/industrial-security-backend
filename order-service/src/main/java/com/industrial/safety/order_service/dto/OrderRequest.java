@@ -49,6 +49,9 @@ public class OrderRequest {
     /** Buyer doc number captured by the Brick. */
     private String mpPayerIdNumber;
 
+    // Optional — null means no coupon applied
+    private String couponCode;
+
     @NotEmpty
     @Valid
     private List<OrderLineItemsRequest> orderLineItemsList;

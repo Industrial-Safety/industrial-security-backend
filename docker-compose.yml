@@ -1,14 +1,25 @@
 services:
-  mongodb:
+  mongodb-course:
     image: mongo:7.0.4
-    container_name: mongodb
+    container_name: mongodb-course
     ports:
-      - "27019:27017" # Asegúrate de que el puerto izquierdo sea el que usas en IntelliJ
+      - "27019:27017"
     environment:
       - MONGO_INITDB_ROOT_USERNAME=root
       - MONGO_INITDB_ROOT_PASSWORD=password
     volumes:
-      - mongo_data:/data/db
+      - mongo_course_data:/data/db
+
+  mongodb-chat:
+    image: mongo:7.0.4
+    container_name: mongodb-chat
+    ports:
+      - "27020:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    volumes:
+      - mongo_chat_data:/data/db
 
   keycloak-db:
     image: postgres:16-alpine
@@ -70,6 +81,15 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+
   keycloak:
     image: quay.io/keycloak/keycloak:24.0.1
     container_name: keycloak
@@ -88,9 +108,11 @@ services:
       - keycloak-db
 
 volumes:
-  mongo_data:
+  mongo_course_data:
+  mongo_chat_data:
   keycloak_data:
   user_data:
   order_data:
   payment_data:
   rabbitmq_data:
+  redis_data:

@@ -26,6 +26,9 @@ public class OrderResponse {
     private String paymentIntentId;
     private String receiptUrl;
     private String failureReason;
+    private String couponCode;
+    private BigDecimal originalAmount;
+    private BigDecimal discountAmount;
     private Instant createdAt;
     private Instant paidAt;
     private List<OrderLineItemsResponse> orderLineItemsList;

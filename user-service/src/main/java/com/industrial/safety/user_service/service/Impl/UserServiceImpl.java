@@ -4,6 +4,7 @@ import com.industrial.safety.user_service.dto.UserCreationResult;
 import com.industrial.safety.user_service.dto.UserRequest;
 import com.industrial.safety.user_service.dto.UserResponse;
 import com.industrial.safety.user_service.dto.UserUpdateRequest;
+import com.industrial.safety.user_service.exception.DuplicateEmailException;
 import com.industrial.safety.user_service.exception.ResourceNotFoundException;
 import com.industrial.safety.user_service.mapper.UserMapper;
 import com.industrial.safety.user_service.model.User;
@@ -122,6 +123,28 @@ public class UserServiceImpl implements UserService {
         userMapper.updateUserFromRequestAdmin(userUpdateRequest, user);
         User userUpdate = userRepository.save(user);
         return userMapper.toUserResponse(userUpdate);
+    }
+
+    @Override
+    public UserResponse createUserAdmin(UserRequest userRequest) {
+        if (userRepository.findByEmail(userRequest.getEmail()).isPresent()) {
+            throw new DuplicateEmailException(userRequest.getEmail());
+        }
+        return createUser(userRequest).user();
+    }
+
+    @Override
+    public UserResponse toggleStatus(String id) {
+        User user = userRepository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException("No existe el id", "id", id)
+        );
+        boolean newStatus = !Boolean.TRUE.equals(user.getIsActive());
+        user.setIsActive(newStatus);
+        userRepository.save(user);
+        if (user.getKeycloakId() != null && !user.getKeycloakId().isBlank()) {
+            keycloakService.setEnabled(user.getKeycloakId(), newStatus);
+        }
+        return userMapper.toUserResponse(user);
     }
 
     @Override

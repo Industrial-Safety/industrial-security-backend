@@ -13,7 +13,9 @@ import com.industrial.safety.order_service.messaging.OrderEventPublisher;
 import com.industrial.safety.order_service.models.Order;
 import com.industrial.safety.order_service.models.OrderLineItems;
 import com.industrial.safety.order_service.models.OrderStatus;
+import com.industrial.safety.order_service.models.Coupon;
 import com.industrial.safety.order_service.repository.OrderRepository;
+import com.industrial.safety.order_service.service.CouponService;
 import com.industrial.safety.order_service.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +36,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final OrderMapper orderMapper;
     private final OrderEventPublisher orderEventPublisher;
+    private final CouponService couponService;
 
     @Override
     @Transactional
@@ -46,13 +49,27 @@ public class OrderServiceImpl implements OrderService {
                 .map(orderMapper::toEntity)
                 .toList();
 
-        BigDecimal total = entities.stream()
+        BigDecimal rawTotal = entities.stream()
                 .map(OrderLineItems::getPrice)
                 .filter(p -> p != null && p.signum() > 0)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        if (total.signum() <= 0) {
+        if (rawTotal.signum() <= 0) {
             throw new IllegalArgumentException("Order total must be positive");
+        }
+
+        // Apply coupon if provided — validation happens here, consumption happens on payment confirm
+        BigDecimal total = rawTotal;
+        BigDecimal discountAmount = BigDecimal.ZERO;
+        String couponCode = null;
+
+        if (request.getCouponCode() != null && !request.getCouponCode().isBlank()) {
+            String firstCourseId = entities.isEmpty() ? null : entities.get(0).getIdCurso();
+            Coupon coupon = couponService.validateAndGet(request.getCouponCode(), firstCourseId);
+            discountAmount = coupon.discountAmount(rawTotal);
+            total = coupon.applyTo(rawTotal);
+            couponCode = coupon.getCode();
+            log.info("Coupon {} applied to order: -{} -> final total {}", couponCode, discountAmount, total);
         }
 
         Order order = Order.builder()
@@ -60,7 +77,10 @@ public class OrderServiceImpl implements OrderService {
                 .userId(request.getUserId())
                 .userEmail(request.getUserEmail())
                 .currency(request.getCurrency() == null ? "USD" : request.getCurrency().toUpperCase())
+                .originalAmount(rawTotal)
+                .discountAmount(discountAmount)
                 .totalAmount(total)
+                .couponCode(couponCode)
                 .orderStatus(OrderStatus.PENDING)
                 .orderLineItemsList(entities)
                 .build();
@@ -149,6 +169,12 @@ public class OrderServiceImpl implements OrderService {
             order.setPaidAt(event.occurredAt() == null ? Instant.now() : event.occurredAt());
             order.setFailureReason(null);
             orderRepository.save(order);
+
+            // Consume coupon use only after confirmed payment
+            if (order.getCouponCode() != null) {
+                couponService.consumeUse(order.getCouponCode());
+            }
+
             fanOutSuccess(order, event);
         } else {
             order.setOrderStatus(OrderStatus.FAILED);

@@ -51,6 +51,15 @@ public class Order {
 
     private String failureReason;
 
+    // Coupon applied at checkout (null if no coupon)
+    private String couponCode;
+
+    @Column(precision = 12, scale = 2)
+    private BigDecimal originalAmount;
+
+    @Column(precision = 12, scale = 2)
+    private BigDecimal discountAmount;
+
     @Column(updatable = false)
     private Instant createdAt;
 
