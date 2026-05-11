@@ -7,6 +7,14 @@ spring:
   data:
     mongodb:
       uri: mongodb://root:password@localhost:27019/course-db?authSource=admin
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 4
   security:
     oauth2:
       resourceserver:
@@ -38,3 +46,7 @@ aws:
   s3:
     bucket-name: ${AWS_BUCKET_NAME}
   region: ${AWS_REGION}
+
+app:
+  management:
+    email: ${MANAGEMENT_EMAIL:gerencia@industrialsafety.com}

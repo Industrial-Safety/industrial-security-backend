@@ -101,6 +101,15 @@ public class KeycloakServiceImpl implements KeycloakService {
         System.out.println("Contrasena actualizada exitosamente para el usuario: " + userId);
     }
 
+    @Override
+    public void setEnabled(String keycloakId, boolean enabled) {
+        UserResource userResource = getUsersResource().get(keycloakId);
+        UserRepresentation rep = userResource.toRepresentation();
+        rep.setEnabled(enabled);
+        userResource.update(rep);
+        System.out.println("Cuenta " + (enabled ? "activada" : "desactivada") + " en Keycloak para: " + keycloakId);
+    }
+
     private String toKeycloakRoleName(String roleName) {
         return roleName != null && roleName.startsWith("ROLE_") ? roleName.substring(5) : roleName;
     }

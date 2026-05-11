@@ -26,6 +26,9 @@ public class GatewayConfig {
                 .route("payment-service", c->c
                         .path("/api/v1/payments","/api/v1/payments/**")
                         .uri("lb://PAYMENT-SERVICE"))
+                .route("chat-service", c->c
+                        .path("/api/v1/chat/**")
+                        .uri("lb://CHAT-SERVICE"))
                 .route("notification-ws", c->c
                         .path("/ws/**")
                         .uri("lb:ws://NOTIFICATION-SERVICE"))

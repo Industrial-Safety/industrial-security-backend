@@ -56,6 +56,16 @@ public class GlobalControllerAdvice {
     }
 
 
+    @ExceptionHandler(DuplicateEmailException.class)
+    public ProblemDetail handleDuplicateEmailException(DuplicateEmailException ex, WebRequest request) {
+        log.warn("Correo duplicado - Path: {}, Message: {}", request.getDescription(false), ex.getMessage());
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problemDetail.setTitle("Correo ya en uso");
+        problemDetail.setType(URI.create("https://api.ecommerce.com/errors/conflict"));
+        problemDetail.setProperty("Timestap", Instant.now());
+        return problemDetail;
+    }
+
     @ExceptionHandler(Exception.class)
     public ProblemDetail handelException(Exception ex, WebRequest request){
 
