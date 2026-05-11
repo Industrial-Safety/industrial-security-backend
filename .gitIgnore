@@ -26,3 +26,6 @@ receipts/
 
 # Claude Code
 .claude/
+
+# Keycloak backups (contienen secretos)
+keycloak-backup/
