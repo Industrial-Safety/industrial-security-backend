@@ -47,6 +47,7 @@ public class Order {
 
     private String paymentIntentId;
 
+    @Column(columnDefinition = "TEXT")
     private String receiptUrl;
 
     private String failureReason;

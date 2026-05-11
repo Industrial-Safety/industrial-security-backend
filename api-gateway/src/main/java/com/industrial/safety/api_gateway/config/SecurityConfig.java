@@ -95,6 +95,19 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.GET, "/api/v1/payments/receipts/**").permitAll()
                         .pathMatchers(HttpMethod.GET, "/api/v1/payments/**").authenticated()
 
+                        // Exams - instructor crea, alumno toma
+                        .pathMatchers(HttpMethod.POST, "/api/v1/exams/parse").hasAnyRole(
+                                Role.INSTRUCTOR.name(), Role.ADMINISTRADOR.name()
+                        )
+                        .pathMatchers(HttpMethod.POST, "/api/v1/exams").hasAnyRole(
+                                Role.INSTRUCTOR.name(), Role.ADMINISTRADOR.name()
+                        )
+                        .pathMatchers(HttpMethod.GET, "/api/v1/exams/**").authenticated()
+                        .pathMatchers(HttpMethod.POST, "/api/v1/exams/*/attempts").hasRole(Role.ALUMNO.name())
+
+                        // Certificates - solo el propio alumno
+                        .pathMatchers(HttpMethod.GET, "/api/v1/certificates/**").authenticated()
+
                         .anyExchange().authenticated())
                 .oauth2Login(Customizer.withDefaults())
                 .oauth2ResourceServer(o -> o

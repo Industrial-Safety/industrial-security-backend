@@ -57,6 +57,18 @@ services:
     volumes:
       - order_data:/var/lib/postgresql/data
 
+  exam-db:
+    image: postgres:16-alpine
+    container_name: exam-db
+    ports:
+      - "5438:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: exam-db
+    volumes:
+      - exam_data:/var/lib/postgresql/data
+
   payment-db:
     image: postgres:16-alpine
     container_name: payment-db
@@ -114,5 +126,6 @@ volumes:
   user_data:
   order_data:
   payment_data:
+  exam_data:
   rabbitmq_data:
   redis_data:

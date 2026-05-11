@@ -1,6 +1,7 @@
 package com.industrial.safety.notification_service.listener;
 
 import com.industrial.safety.notification_service.config.RabbitMQConfig;
+import com.industrial.safety.notification_service.dto.CertificateEmailRequest;
 import com.industrial.safety.notification_service.dto.EmailNotificationRequest;
 import com.industrial.safety.notification_service.dto.WebAlertRequest;
 import com.industrial.safety.notification_service.service.EmailService;
@@ -37,6 +38,21 @@ public class NotificationEventConsumer {
             channel.basicAck(tag, false);
         } catch (RuntimeException ex) {
             log.error("[email-event] Unexpected error — DLQ", ex);
+            channel.basicNack(tag, false, false);
+        }
+    }
+
+    @RabbitListener(queues = RabbitMQConfig.CERT_QUEUE)
+    public void consumeCertificateEvent(@Payload CertificateEmailRequest request,
+                                        Channel channel,
+                                        @Header(AmqpHeaders.DELIVERY_TAG) long tag)
+            throws IOException {
+        log.info("[cert-event] to={} course='{}'", request.to(), request.courseName());
+        try {
+            emailService.sendCertificateEmail(request);
+            channel.basicAck(tag, false);
+        } catch (RuntimeException ex) {
+            log.error("[cert-event] Unexpected error — DLQ", ex);
             channel.basicNack(tag, false, false);
         }
     }
