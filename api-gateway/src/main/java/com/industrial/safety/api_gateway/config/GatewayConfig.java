@@ -29,6 +29,12 @@ public class GatewayConfig {
                 .route("chat-service", c->c
                         .path("/api/v1/chat/**")
                         .uri("lb://CHAT-SERVICE"))
+                .route("exam-service", c->c
+                        .path("/api/v1/exams", "/api/v1/exams/**")
+                        .uri("lb://EXAM-SERVICE"))
+                .route("certificate-service", c->c
+                        .path("/api/v1/certificates", "/api/v1/certificates/**")
+                        .uri("lb://EXAM-SERVICE"))
                 .route("notification-ws", c->c
                         .path("/ws/**")
                         .uri("lb:ws://NOTIFICATION-SERVICE"))
