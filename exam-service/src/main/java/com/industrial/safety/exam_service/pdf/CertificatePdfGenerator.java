@@ -35,7 +35,7 @@ import java.time.format.DateTimeFormatter;
 public class CertificatePdfGenerator {
 
     private static final String S3_KEY_PREFIX = "certificates/";
-    private static final Duration PRESIGN_TTL = Duration.ofDays(365);
+    private static final Duration PRESIGN_TTL = Duration.ofDays(7);
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter
             .ofPattern("dd 'de' MMMM 'de' yyyy")
             .withZone(ZoneId.systemDefault())
@@ -61,6 +61,11 @@ public class CertificatePdfGenerator {
                 .build();
         s3Client.putObject(put, RequestBody.fromBytes(pdf));
         log.info("Certificate uploaded to s3://{}/{}", bucketName, key);
+        return key; // devuelve la clave S3, no la URL (la URL se genera fresca en cada request)
+    }
+
+    /** Genera una URL pre-firmada de 7 días a partir de la clave S3 almacenada. */
+    public String presignUrl(String key) {
         return presign(key);
     }
 
