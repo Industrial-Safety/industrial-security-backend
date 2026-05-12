@@ -39,13 +39,14 @@ public class AttemptServiceImpl implements AttemptService {
         Exam exam = examRepository.findById(examId)
                 .orElseThrow(() -> new ExamNotFoundException("Examen no encontrado: " + examId));
 
-        // Already passed — return existing certificate
+        // Already passed — generate fresh presigned URL from stored S3 key
         if (attemptRepository.existsByExamIdAndStudentIdAndPassedTrue(examId, request.studentId())) {
             Certificate existing = certificateRepository
                     .findByStudentIdAndExamId(request.studentId(), examId)
                     .orElseThrow();
+            String freshUrl = pdfGenerator.presignUrl(existing.getCertificateUrl());
             return new AttemptResultResponse(true, existing.getScore(),
-                    exam.getPassingScore(), "Ya aprobaste este examen.", existing.getCertificateUrl());
+                    exam.getPassingScore(), "Ya aprobaste este examen.", freshUrl);
         }
 
         int score = grade(exam.getQuestions(), request.answers());
@@ -67,11 +68,12 @@ public class AttemptServiceImpl implements AttemptService {
                     "Necesitas " + exam.getPassingScore() + "% para aprobar. Obtuviste " + score + "%.", null);
         }
 
-        // Generate certificate
-        String certUrl = pdfGenerator.generateAndUpload(
+        // Generate certificate — s3Key se guarda en BD, freshUrl se devuelve al cliente
+        String s3Key = pdfGenerator.generateAndUpload(
                 request.studentId(), examId,
                 request.studentName(), exam.getTitle(),
                 exam.getInstructorName(), score);
+        String freshUrl = pdfGenerator.presignUrl(s3Key);
 
         Certificate cert = Certificate.builder()
                 .studentId(request.studentId())
@@ -81,15 +83,15 @@ public class AttemptServiceImpl implements AttemptService {
                 .instructorName(exam.getInstructorName())
                 .examId(examId)
                 .score(score)
-                .certificateUrl(certUrl)
+                .certificateUrl(s3Key) // persistimos la clave, no la URL
                 .build();
         certificateRepository.save(cert);
 
-        // Publish event for notification-service
+        // Publish event — incluye URL fresca para el email
         ExamPassedEvent event = new ExamPassedEvent(
                 request.studentId(), request.studentName(), request.studentEmail(),
                 exam.getCourseId(), exam.getTitle(), exam.getInstructorName(),
-                examId, score, certUrl);
+                examId, score, freshUrl);
         rabbitTemplate.convertAndSend(
                 RabbitMQConfig.PLATFORM_EXCHANGE,
                 RabbitMQConfig.CERT_EMAIL_ROUTING_KEY,
@@ -97,7 +99,7 @@ public class AttemptServiceImpl implements AttemptService {
         log.info("ExamPassedEvent published for student={} exam={}", request.studentId(), examId);
 
         return new AttemptResultResponse(true, score, exam.getPassingScore(),
-                "¡Felicidades! Aprobaste con " + score + "%.", certUrl);
+                "¡Felicidades! Aprobaste con " + score + "%.", freshUrl);
     }
 
     private int grade(java.util.List<Question> questions, Map<String, String> answers) {
