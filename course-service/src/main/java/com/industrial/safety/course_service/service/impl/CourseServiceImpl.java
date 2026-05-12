@@ -92,6 +92,15 @@ public class CourseServiceImpl implements CourseService
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<CourseResponse> getCoursesByIds(List<String> ids) {
+        return courseRepository.findAllById(ids)
+                .stream()
+                .map(courseMapper::toCourseResponse)
+                .toList();
+    }
+
+    @Override
     @Transactional
     public void deleteCourse(String id) {
         if (!courseRepository.existsById(id))

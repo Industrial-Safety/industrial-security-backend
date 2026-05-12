@@ -50,6 +50,12 @@ public class CourseController
         return courseService.updateCourse(id, courseRequest);
     }
 
+    @GetMapping("/bulk")
+    @ResponseStatus(HttpStatus.OK)
+    public List<CourseResponse> getCoursesByIds(@RequestParam List<String> ids) {
+        return courseService.getCoursesByIds(ids);
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteCourse(@PathVariable String id){

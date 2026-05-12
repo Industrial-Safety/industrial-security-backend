@@ -13,4 +13,5 @@ public interface CourseService
     CourseResponse getCourseById(String id);
     CourseResponse updateCourse(String id, CourseRequest courseRequest);
     void deleteCourse(String id);
+    List<CourseResponse> getCoursesByIds(List<String> ids);
 }
