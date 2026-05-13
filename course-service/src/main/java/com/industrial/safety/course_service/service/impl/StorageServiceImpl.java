@@ -1,7 +1,10 @@
 package com.industrial.safety.course_service.service.impl;
 
 import com.industrial.safety.course_service.service.StorageService;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -12,6 +15,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 import java.time.Duration;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class StorageServiceImpl implements StorageService {
@@ -22,11 +26,15 @@ public class StorageServiceImpl implements StorageService {
     private String bucketName;
 
     @Override
+    @CircuitBreaker(name = "aws-s3", fallbackMethod = "fallbackPresignedUrl")
+    @Retry(name = "aws-s3")
     public Map<String, String> generatePresignedUrl(String fileName, String contentType) {
         return buildPresignedUrl("safety-videos/" + fileName, contentType);
     }
 
     @Override
+    @CircuitBreaker(name = "aws-s3", fallbackMethod = "fallbackPresignedUrl")
+    @Retry(name = "aws-s3")
     public Map<String, String> generateCoverPresignedUrl(String fileName, String contentType) {
         return buildPresignedUrl("courses/covers/" + fileName, contentType);
     }
@@ -51,5 +59,17 @@ public class StorageServiceImpl implements StorageService {
                 "uploadUrl", uploadUrl,
                 "fileUrl", fileUrl
         );
+    }
+
+    @SuppressWarnings("unused")
+    private Map<String, String> fallbackPresignedUrl(String fileName, String contentType, Throwable ex) {
+        log.error("AWS S3 circuit open — no se pudo generar URL pre-firmada para {}: {}", fileName, ex.getMessage());
+        throw new S3UnavailableException("Servicio de almacenamiento no disponible. Intenta de nuevo en unos momentos.");
+    }
+
+    public static class S3UnavailableException extends RuntimeException {
+        public S3UnavailableException(String message) {
+            super(message);
+        }
     }
 }

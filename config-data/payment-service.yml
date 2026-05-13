@@ -84,6 +84,12 @@ resilience4j:
         wait-duration-in-open-state: 10s
         permitted-number-of-calls-in-half-open-state: 5
         register-health-indicator: true
+      aws-s3:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 15s
+        permitted-number-of-calls-in-half-open-state: 3
+        register-health-indicator: true
   retry:
     instances:
       mercadopago:
@@ -92,6 +98,14 @@ resilience4j:
         exponential-backoff-multiplier: 2
         retry-exceptions:
           - org.springframework.web.reactive.function.client.WebClientRequestException
+          - java.io.IOException
+      aws-s3:
+        max-attempts: 3
+        wait-duration: 500ms
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - software.amazon.awssdk.core.exception.SdkClientException
+          - java.net.ConnectException
           - java.io.IOException
 
 eureka:

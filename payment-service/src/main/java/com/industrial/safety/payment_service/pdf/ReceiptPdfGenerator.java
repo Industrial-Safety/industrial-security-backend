@@ -3,6 +3,8 @@ package com.industrial.safety.payment_service.pdf;
 import com.industrial.safety.payment_service.domain.Payment;
 import com.industrial.safety.payment_service.dto.event.OrderItemEvent;
 import com.industrial.safety.payment_service.exception.PaymentProcessingException;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import com.lowagie.text.Document;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;
@@ -56,6 +58,8 @@ public class ReceiptPdfGenerator {
      * Builds the PDF in memory, uploads it to S3 under receipts/{orderNumber}.pdf,
      * and returns a presigned GET URL valid for {@link #PRESIGNED_URL_TTL}.
      */
+    @CircuitBreaker(name = "aws-s3", fallbackMethod = "fallbackGenerateAndUpload")
+    @Retry(name = "aws-s3")
     public String generateAndUpload(Payment payment, List<OrderItemEvent> items) {
         byte[] pdfBytes = renderPdf(payment, items);
         String key = S3_KEY_PREFIX + payment.getOrderNumber() + ".pdf";
@@ -76,6 +80,14 @@ public class ReceiptPdfGenerator {
         }
 
         return buildPresignedUrl(key);
+    }
+
+    @SuppressWarnings("unused")
+    private String fallbackGenerateAndUpload(Payment payment, List<OrderItemEvent> items, Throwable ex) {
+        log.error("AWS S3 circuit open — no se pudo subir recibo para orden {}: {}",
+                payment.getOrderNumber(), ex.getMessage());
+        throw new PaymentProcessingException("receipt_s3_unavailable",
+                "Servicio de almacenamiento no disponible. El recibo no pudo generarse.", ex);
     }
 
     private String buildPresignedUrl(String key) {
