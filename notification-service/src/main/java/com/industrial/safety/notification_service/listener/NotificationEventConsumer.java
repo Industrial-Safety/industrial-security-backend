@@ -47,7 +47,7 @@ public class NotificationEventConsumer {
                                         Channel channel,
                                         @Header(AmqpHeaders.DELIVERY_TAG) long tag)
             throws IOException {
-        log.info("[cert-event] to={} course='{}'", request.to(), request.courseName());
+        log.info("[cert-event] to={} course='{}'", request.studentEmail(), request.courseName());
         try {
             emailService.sendCertificateEmail(request);
             channel.basicAck(tag, false);

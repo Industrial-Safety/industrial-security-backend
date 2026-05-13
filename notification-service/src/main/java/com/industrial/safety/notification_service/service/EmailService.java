@@ -88,9 +88,9 @@ public class EmailService {
             helper.setSubject("¡Felicidades! Tu certificado de " + safe(request.courseName()));
             helper.setText(buildCertHtml(request), true);
             mailSender.send(message);
-            log.info("[cert-email] Sent to {} course='{}'", request.to(), request.courseName());
+            log.info("[cert-email] Sent to {} course='{}'", request.studentEmail(), request.courseName());
         } catch (MessagingException | UnsupportedEncodingException ex) {
-            log.error("[cert-email] Failed to send to {}", request.to(), ex);
+            log.error("[cert-email] Failed to send to {}", request.studentEmail(), ex);
         }
     }
 
