@@ -6,7 +6,7 @@ spring:
       enabled: true
   data:
     mongodb:
-      uri: mongodb+srv://ricardoipalomino_db_user:7yeM063DgLJoyMV6@cluster-industrial-safe.vjhcknn.mongodb.net/chat-db?appName=cluster-industrial-safety
+      uri: mongodb://root:password@localhost:27020/chat-db?authSource=admin
 
 server:
   port: 8085
