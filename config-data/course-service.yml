@@ -11,6 +11,8 @@ spring:
       host: ${REDIS_HOST:genuine-mollusk-124462.upstash.io}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:gQAAAAAAAeYuAAIgcDFlNTdiOGQyYjhhNzM0Yzk1YTVhNzFjMzVhNjQ1Mjg4Ng}
+      ssl:
+        enabled: true
       lettuce:
         pool:
           max-active: 8
