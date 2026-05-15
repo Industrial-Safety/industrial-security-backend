@@ -6,13 +6,11 @@ spring:
       enabled: true
   data:
     mongodb:
-      uri: mongodb+srv://ricardoipalomino_db_user:7yeM063DgLJoyMV6@cluster-industrial-safe.vjhcknn.mongodb.net/course-db?appName=cluster-industrial-safety
+      uri: mongodb://root:password@localhost:27019/course-db?authSource=admin
     redis:
-      host: ${REDIS_HOST:genuine-mollusk-124462.upstash.io}
+      host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:gQAAAAAAAeYuAAIgcDFlNTdiOGQyYjhhNzM0Yzk1YTVhNzFjMzVhNjQ1Mjg4Ng}
-      ssl:
-        enabled: true
+      password: ${REDIS_PASSWORD:}
       lettuce:
         pool:
           max-active: 8
