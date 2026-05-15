@@ -8,6 +8,7 @@ import java.util.Optional;
 
 public interface StudentAttemptRepository extends JpaRepository<StudentAttempt, Long> {
     List<StudentAttempt> findByStudentIdOrderBySubmittedAtDesc(String studentId);
+    List<StudentAttempt> findByExamIdOrderBySubmittedAtDesc(Long examId);
     Optional<StudentAttempt> findTopByExamIdAndStudentIdOrderBySubmittedAtDesc(Long examId, String studentId);
     boolean existsByExamIdAndStudentIdAndPassedTrue(Long examId, String studentId);
 }

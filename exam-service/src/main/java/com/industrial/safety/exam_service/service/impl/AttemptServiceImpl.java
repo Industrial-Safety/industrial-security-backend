@@ -4,6 +4,9 @@ import com.industrial.safety.exam_service.config.RabbitMQConfig;
 import com.industrial.safety.exam_service.dto.event.ExamPassedEvent;
 import com.industrial.safety.exam_service.dto.request.SubmitAttemptRequest;
 import com.industrial.safety.exam_service.dto.response.AttemptResultResponse;
+import com.industrial.safety.exam_service.dto.response.StudentAttemptSummaryResponse;
+
+import java.util.List;
 import com.industrial.safety.exam_service.exception.ExamNotFoundException;
 import com.industrial.safety.exam_service.model.Exam;
 import com.industrial.safety.exam_service.model.Question;
@@ -100,6 +103,16 @@ public class AttemptServiceImpl implements AttemptService {
 
         return new AttemptResultResponse(true, score, exam.getPassingScore(),
                 "¡Felicidades! Aprobaste con " + score + "%.", freshUrl);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<StudentAttemptSummaryResponse> getAttemptsByExam(Long examId) {
+        return attemptRepository.findByExamIdOrderBySubmittedAtDesc(examId).stream()
+                .map(a -> new StudentAttemptSummaryResponse(
+                        a.getId(), a.getStudentId(), a.getStudentName(),
+                        a.getStudentEmail(), a.getScore(), a.getPassed(), a.getSubmittedAt()))
+                .toList();
     }
 
     private int grade(java.util.List<Question> questions, Map<String, String> answers) {

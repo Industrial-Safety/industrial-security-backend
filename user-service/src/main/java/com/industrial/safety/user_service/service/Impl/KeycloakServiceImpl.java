@@ -54,16 +54,20 @@ public class KeycloakServiceImpl implements KeycloakService {
 
         int status = response.getStatus();
 
+        String keycloakId;
         if (status == 409) {
-            throw new UserAlreadyExistsInKeycloakException("Usuario ya existe en Keycloak: " + userRequest.getEmail());
-        }
-
-        if (status < 200 || status >= 300) {
+            List<UserRepresentation> existing = realmResource.users().searchByEmail(userRequest.getEmail(), true);
+            if (existing == null || existing.isEmpty()) {
+                throw new RuntimeException("Usuario duplicado en Keycloak pero no encontrado por email: " + userRequest.getEmail());
+            }
+            keycloakId = existing.get(0).getId();
+            log.info("Usuario {} ya existía en Keycloak (id={}), reutilizando y asignando rol.", userRequest.getEmail(), keycloakId);
+        } else if (status < 200 || status >= 300) {
             String body = response.readEntity(String.class);
             throw new RuntimeException("Error creando usuario en Keycloak. Status: " + status + " - " + body);
+        } else {
+            keycloakId = CreatedResponseUtil.getCreatedId(response);
         }
-
-        String keycloakId = CreatedResponseUtil.getCreatedId(response);
 
         RoleRepresentation role = realmResource.roles()
                 .get(toKeycloakRoleName(userRequest.getRole()))
@@ -127,7 +131,7 @@ public class KeycloakServiceImpl implements KeycloakService {
 
     @SuppressWarnings("unused")
     private String fallbackCreateUser(UserRequest userRequest, Throwable ex) {
-        log.error("Keycloak circuit open — no se pudo crear usuario {}: {}", userRequest.getEmail(), ex.getMessage());
+        log.error("Keycloak no disponible — no se pudo crear usuario {}: {}", userRequest.getEmail(), ex.getMessage());
         throw new KeycloakUnavailableException("Servicio de autenticación no disponible. Intenta de nuevo en unos momentos.");
     }
 

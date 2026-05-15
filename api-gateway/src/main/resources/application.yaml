@@ -4,14 +4,14 @@ spring:
   config:
     import: "optional:configserver:http://localhost:8888"
 
-# Local override (no se va a Git): exponer endpoint gateway para diagnóstico.
+
 management:
   endpoints:
     web:
       exposure:
         include: health,info,gateway,metrics
 
-# DEBUG temporal — bajalo a INFO una vez que el flujo funcione.
+
 logging:
   level:
     org.springframework.cloud.gateway: DEBUG

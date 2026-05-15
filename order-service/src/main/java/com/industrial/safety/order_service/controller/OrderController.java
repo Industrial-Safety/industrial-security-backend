@@ -46,6 +46,11 @@ public class OrderController {
         return orderService.getOrdersByUserId(userId);
     }
 
+    @GetMapping("/by-course/{courseId}")
+    public List<OrderResponse> getByCourse(@PathVariable String courseId) {
+        return orderService.getCompletedOrdersByCourseId(courseId);
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancel(@PathVariable Long id) {
         orderService.cancelOrder(id);
