@@ -18,8 +18,12 @@ public class UserResponse
     private String name;
     private String lastName;
     private String email;
+    private String role;
     private String urlPhoto;
+    private String cellphone;
     private String qrCodeUrl;
+    private String dni;
     private Boolean isActive;
     private LocalDate createAccount;
+    private Boolean mustChangePassword;
 }

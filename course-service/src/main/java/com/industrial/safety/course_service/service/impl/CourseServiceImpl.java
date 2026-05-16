@@ -5,7 +5,6 @@ import com.industrial.safety.course_service.dto.CourseResponse;
 import com.industrial.safety.course_service.exception.ResourceNotFoundException;
 import com.industrial.safety.course_service.mapper.CourseMapper;
 import com.industrial.safety.course_service.model.Course;
-import com.industrial.safety.course_service.model.component.Section;
 import com.industrial.safety.course_service.repository.CourseRepository;
 import com.industrial.safety.course_service.service.CourseService;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +20,7 @@ public class CourseServiceImpl implements CourseService
 {
     private final CourseRepository courseRepository;
     private final CourseMapper courseMapper;
+
     @Override
     @Transactional
     public CourseResponse creatCourse(CourseRequest courseRequest) {
@@ -47,9 +47,18 @@ public class CourseServiceImpl implements CourseService
 
     @Override
     @Transactional(readOnly = true)
+    public List<CourseResponse> getMyCourses(String instructorId) {
+        return courseRepository.findByTeacherId(instructorId)
+                .stream()
+                .map(courseMapper::toCourseResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public CourseResponse getCourseById(String id) {
         Course course = courseRepository.findById(id).orElseThrow(
-                ()-> new ResourceNotFoundException("Course","id",id)
+                () -> new ResourceNotFoundException("Course", "id", id)
         );
         return courseMapper.toCourseResponse(course);
     }
@@ -58,9 +67,9 @@ public class CourseServiceImpl implements CourseService
     @Transactional
     public CourseResponse updateCourse(String id, CourseRequest courseRequest) {
         Course course = courseRepository.findById(id).orElseThrow(
-                ()-> new ResourceNotFoundException("Course","id",id)
+                () -> new ResourceNotFoundException("Course", "id", id)
         );
-        courseMapper.updateCourseFromRqueset(courseRequest,course);
+        courseMapper.updateCourseFromRqueset(courseRequest, course);
         course.getSectionList().forEach(section -> {
             if (section.getId() == null)
                 section.setId(UUID.randomUUID().toString());
@@ -80,9 +89,8 @@ public class CourseServiceImpl implements CourseService
     @Override
     @Transactional
     public void deleteCourse(String id) {
-      if(!courseRepository.existsById(id))
-        throw new ResourceNotFoundException("Course no econtrado","id",id);
-      courseRepository.deleteById(id);
+        if (!courseRepository.existsById(id))
+            throw new ResourceNotFoundException("Course no encontrado", "id", id);
+        courseRepository.deleteById(id);
     }
-
 }

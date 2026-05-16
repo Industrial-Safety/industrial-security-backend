@@ -20,5 +20,11 @@ public class StorageController {
             @RequestParam String contentType) {
         return ResponseEntity.ok(storageService.generatePresignedUrl(fileName, contentType));
     }
-}
 
+    @GetMapping("/upload-url/cover")
+    public ResponseEntity<Map<String, String>> getCoverUploadUrl(
+            @RequestParam String fileName,
+            @RequestParam String contentType) {
+        return ResponseEntity.ok(storageService.generateCoverPresignedUrl(fileName, contentType));
+    }
+}
