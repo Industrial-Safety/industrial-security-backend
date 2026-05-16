@@ -6,7 +6,7 @@ spring:
       enabled: false
   data:
     mongodb:
-      uri: ${MONGO_URI:mongodb://localhost:27017/chat_test}
+      uri: mongodb://root:password@localhost:27020/chat-db?authSource=admin
 
 eureka:
   client:

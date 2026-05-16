@@ -5,7 +5,9 @@ spring:
     config:
       enabled: false
   datasource:
-    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/user_test}
+    url: jdbc:postgresql://localhost:5435/user-db
+    username: admin
+    password: admin
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -18,6 +20,14 @@ keycloak:
 aws:
   s3:
     bucket-name: test-bucket
+
+cloud:
+  aws:
+    credentials:
+      access-key: test-access-key
+      secret-key: test-secret-key
+    region:
+      static: us-east-1
 
 eureka:
   client:

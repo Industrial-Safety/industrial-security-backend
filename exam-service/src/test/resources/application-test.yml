@@ -5,20 +5,32 @@ spring:
     config:
       enabled: false
   datasource:
-    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/exam_test}
+    url: jdbc:postgresql://localhost:5438/exam-db
+    username: admin
+    password: admin
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: create-drop
     show-sql: false
   rabbitmq:
-    host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5672}
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
   security:
     oauth2:
       resourceserver:
         jwt:
           issuer-uri: http://localhost:9090/realms/industrial-safety
+
+cloud:
+  aws:
+    credentials:
+      access-key: test-access-key
+      secret-key: test-secret-key
+    region:
+      static: us-east-1
 
 eureka:
   client:

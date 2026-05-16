@@ -5,15 +5,19 @@ spring:
     config:
       enabled: false
   datasource:
-    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/order_test}
+    url: jdbc:postgresql://localhost:5436/order-db
+    username: admin
+    password: admin
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: create-drop
     show-sql: false
   rabbitmq:
-    host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5672}
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
 
 eureka:
   client:
