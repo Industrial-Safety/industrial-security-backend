@@ -62,6 +62,10 @@ spring:
           uri: lb://chat-service
           predicates:
             - Path=/api/v1/chat,/api/v1/chat/**
+        - id: purchase-service
+          uri: lb://purchase-service
+          predicates:
+            - Path=/api/v1/purchase,/api/v1/purchase/**
         - id: notification-ws
           uri: lb:ws://notification-service
           predicates:
