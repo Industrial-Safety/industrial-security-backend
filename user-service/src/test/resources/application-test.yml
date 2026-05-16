@@ -1,0 +1,24 @@
+spring:
+  config:
+    import: "optional:configserver:"
+  cloud:
+    config:
+      enabled: false
+  datasource:
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/user_test}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
+keycloak:
+  realm: industrial-safety
+
+aws:
+  s3:
+    bucket-name: test-bucket
+
+eureka:
+  client:
+    enabled: false

@@ -1,0 +1,32 @@
+spring:
+  config:
+    import: "optional:configserver:"
+  cloud:
+    config:
+      enabled: false
+  data:
+    mongodb:
+      uri: ${MONGO_URI:mongodb://localhost:27017/course_test}
+    redis:
+      host: localhost
+      port: 6379
+  rabbitmq:
+    host: localhost
+    port: 5672
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Apunta a un issuer ficticio; en tests se usa MockMvc con jwt() postprocessor
+          issuer-uri: http://localhost:9090/realms/industrial-safety
+
+eureka:
+  client:
+    enabled: false
+  instance:
+    prefer-ip-address: false
+
+logging:
+  level:
+    com.industrial.safety: DEBUG
+    org.springframework.security: DEBUG

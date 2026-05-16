@@ -1,0 +1,13 @@
+spring:
+  config:
+    import: "optional:configserver:"
+  cloud:
+    config:
+      enabled: false
+  data:
+    mongodb:
+      uri: ${MONGO_URI:mongodb://localhost:27017/chat_test}
+
+eureka:
+  client:
+    enabled: false
