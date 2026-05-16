@@ -11,3 +11,4 @@ public enum Role
     MARKETING,
     LOGISTICA_ALMACEN
 }
+

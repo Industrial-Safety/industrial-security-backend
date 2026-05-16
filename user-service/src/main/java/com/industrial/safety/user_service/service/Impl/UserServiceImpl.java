@@ -148,6 +148,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public UserResponse getUserByDni(String dni) {
+        User user = userRepository.findByDniAndRole(dni, "ROLE_TRABAJADOR").orElseThrow(
+                () -> new ResourceNotFoundException("Trabajador no encontrado con DNI", "dni", dni)
+        );
+        return userMapper.toUserResponse(user);
+    }
+
+    @Override
     public void changePassword(String keycloakId, String email, String newPassword) {
         keycloakService.updatePassword(keycloakId, newPassword);
         // Busca por keycloakId; si no encuentra (ID desincronizado en DB), cae a email

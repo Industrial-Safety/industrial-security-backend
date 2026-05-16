@@ -18,4 +18,5 @@ public interface UserService
     UserResponse updateUserAdmin(String id, UserUpdateRequest userUpdateRequest);
     void changePassword(String keycloakId, String email, String newPassword);
     UserResponse toggleStatus(String id);
+    UserResponse getUserByDni(String dni);
 }
