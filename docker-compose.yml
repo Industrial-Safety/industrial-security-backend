@@ -1,20 +1,29 @@
-version: '3.8'
-
 services:
 
-  # ── MongoDB ────────────────────────────────────────────
-  mongodb:
+  mongodb-course:
     image: mongo:7.0.4
-    container_name: mongodb
+    container_name: mongodb-course
     ports:
       - "27019:27017"
     environment:
       - MONGO_INITDB_ROOT_USERNAME=root
       - MONGO_INITDB_ROOT_PASSWORD=password
     volumes:
-      - mongo_data:/data/db
+      - mongo_course_data:/data/db
 
-  # ── Keycloak DB ────────────────────────────────────────
+
+  mongodb-chat:
+    image: mongo:7.0.4
+    container_name: mongodb-chat
+    ports:
+      - "27020:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    volumes:
+      - mongo_chat_data:/data/db
+
+
   keycloak-db:
     image: postgres:16-alpine
     container_name: keycloak-db
@@ -27,7 +36,7 @@ services:
     volumes:
       - keycloak_data:/var/lib/postgresql/data
 
-  # ── User DB ────────────────────────────────────────────
+
   user-db:
     image: postgres:16-alpine
     container_name: user-db
@@ -40,7 +49,69 @@ services:
     volumes:
       - user_data:/var/lib/postgresql/data
 
-  # ── Keycloak ───────────────────────────────────────────
+
+  order-db:
+    image: postgres:16-alpine
+    container_name: order-db
+    ports:
+      - "5436:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: order-db
+    volumes:
+      - order_data:/var/lib/postgresql/data
+
+
+  payment-db:
+    image: postgres:16-alpine
+    container_name: payment-db
+    ports:
+      - "5437:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: payment-db
+    volumes:
+      - payment_data:/var/lib/postgresql/data
+
+
+  exam-db:
+    image: postgres:16-alpine
+    container_name: exam-db
+    ports:
+      - "5438:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: exam-db
+    volumes:
+      - exam_data:/var/lib/postgresql/data
+
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+
+
   keycloak:
     image: quay.io/keycloak/keycloak:24.0.1
     container_name: keycloak
@@ -57,15 +128,19 @@ services:
     depends_on:
       - keycloak-db
 
+  # ══════════════════════════════════════════════════════
+  # EPP — Replicación Master-Slave
+  # ══════════════════════════════════════════════════════
+
   # ── EPP Master — recibe escrituras ────────────────────
   epp-master:
     image: postgres:16-alpine
     container_name: epp-master
     ports:
-      - "5432:5432"
+      - "5439:5432"
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: root
+      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: safety_db
     volumes:
       - epp_master_data:/var/lib/postgresql/data
@@ -81,10 +156,10 @@ services:
     image: postgres:16-alpine
     container_name: epp-slave1
     ports:
-      - "5433:5432"
+      - "5440:5432"
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: root
+      POSTGRES_PASSWORD: postgres
       PGUSER: postgres
     volumes:
       - epp_slave1_data:/var/lib/postgresql/data
@@ -108,10 +183,10 @@ services:
     image: postgres:16-alpine
     container_name: epp-slave2
     ports:
-      - "5436:5432"
+      - "5441:5432"
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: root
+      POSTGRES_PASSWORD: postgres
       PGUSER: postgres
     volumes:
       - epp_slave2_data:/var/lib/postgresql/data
@@ -131,9 +206,15 @@ services:
       - epp-network
 
 volumes:
-  mongo_data:
+  mongo_course_data:
+  mongo_chat_data:
   keycloak_data:
   user_data:
+  order_data:
+  payment_data:
+  exam_data:
+  rabbitmq_data:
+  redis_data:
   epp_master_data:
   epp_slave1_data:
   epp_slave2_data:
