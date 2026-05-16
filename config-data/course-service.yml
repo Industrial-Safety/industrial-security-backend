@@ -7,11 +7,16 @@ spring:
   data:
     mongodb:
       uri: mongodb://root:password@localhost:27019/course-db?authSource=admin
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9090/realms/industrial-safety
 
 server:
   port: 8080
   error:
-    include-message: always #configurar que se aplica y que siempre este en el json sin importar si el error lo generamos nostros o el frontend
+    include-message: always
     include-stacktrace: never
 eureka:
   client:
