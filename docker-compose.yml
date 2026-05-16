@@ -81,6 +81,18 @@ services:
     volumes:
       - payment_data:/var/lib/postgresql/data
 
+  purchase-db:
+    image: postgres:16-alpine
+    container_name: purchase-db
+    ports:
+      - "5439:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: purchase-db
+    volumes:
+      - purchase_data:/var/lib/postgresql/data
+
   rabbitmq:
     image: rabbitmq:3.13-management
     container_name: rabbitmq
@@ -120,6 +132,7 @@ services:
       - keycloak-db
 
 volumes:
+  purchase_data:
   mongo_course_data:
   mongo_chat_data:
   keycloak_data:
