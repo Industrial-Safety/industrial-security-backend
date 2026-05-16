@@ -111,7 +111,10 @@ public class SecurityConfig {
                         // Certificates - solo el propio alumno
                         .pathMatchers(HttpMethod.GET, "/api/v1/certificates/**").authenticated()
 
-                        // Purchase - solo LOGISTICA_ALMACEN
+                        // Purchase - entregas propias accesibles al trabajador
+                        .pathMatchers(HttpMethod.GET, "/api/v1/purchase/epp/deliveries").hasAnyRole(
+                                Role.LOGISTICA_ALMACEN.name(), Role.TRABAJADOR.name()
+                        )
                         .pathMatchers("/api/v1/purchase/**").hasRole(Role.LOGISTICA_ALMACEN.name())
 
                         .anyExchange().authenticated())

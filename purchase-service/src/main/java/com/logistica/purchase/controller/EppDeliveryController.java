@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/purchase/epp")
@@ -26,5 +27,11 @@ public class EppDeliveryController {
     @ResponseStatus(HttpStatus.CREATED)
     public EppDeliveryResponse deliver(@Valid @RequestBody EppDeliveryRequest request) {
         return eppDeliveryService.deliver(request);
+    }
+
+    @GetMapping("/deliveries")
+    @ResponseStatus(HttpStatus.OK)
+    public List<EppDeliveryResponse> getDeliveriesByWorker(@RequestParam String workerDni) {
+        return eppDeliveryService.getDeliveriesByWorkerDni(workerDni);
     }
 }
