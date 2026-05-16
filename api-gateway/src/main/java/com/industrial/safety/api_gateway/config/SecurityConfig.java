@@ -108,6 +108,9 @@ public class SecurityConfig {
                         // Certificates - solo el propio alumno
                         .pathMatchers(HttpMethod.GET, "/api/v1/certificates/**").authenticated()
 
+                        // Purchase - solo LOGISTICA_ALMACEN
+                        .pathMatchers("/api/v1/purchase/**").hasRole(Role.LOGISTICA_ALMACEN.name())
+
                         .anyExchange().authenticated())
                 .oauth2Login(Customizer.withDefaults())
                 .oauth2ResourceServer(o -> o
