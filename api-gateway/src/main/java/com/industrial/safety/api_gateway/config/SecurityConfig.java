@@ -56,6 +56,9 @@ public class SecurityConfig {
                         // Users - especificos primero, wildcards al final
                         .pathMatchers(HttpMethod.POST, "/api/v1/users/register").permitAll()
                         .pathMatchers(HttpMethod.POST, "/api/v1/users/change-password").authenticated()
+                        .pathMatchers(HttpMethod.GET, "/api/v1/users/by-dni").hasAnyRole(
+                                Role.LOGISTICA_ALMACEN.name()
+                        )
                         .pathMatchers(HttpMethod.GET, "/api/v1/users/by-email").hasAnyRole(
                                 Role.ALUMNO.name(), Role.ADMINISTRADOR.name(), Role.INSTRUCTOR.name(),
                                 Role.TRABAJADOR.name(), Role.MARKETING.name(), Role.JEFE_SEGURIDAD.name(),

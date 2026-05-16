@@ -35,6 +35,9 @@ public class GatewayConfig {
                 .route("certificate-service", c->c
                         .path("/api/v1/certificates", "/api/v1/certificates/**")
                         .uri("lb://EXAM-SERVICE"))
+                .route("purchase-service", c->c
+                        .path("/api/v1/purchase", "/api/v1/purchase/**")
+                        .uri("lb://PURCHASE-SERVICE"))
                 .route("notification-ws", c->c
                         .path("/ws/**")
                         .uri("lb:ws://NOTIFICATION-SERVICE"))

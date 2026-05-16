@@ -1,51 +1,58 @@
 package com.logistica.purchase.controller;
 
-import com.logistica.purchase.entity.PurchaseRequest;
+import com.logistica.purchase.dto.PurchaseRequestCreateRequest;
+import com.logistica.purchase.dto.PurchaseRequestResponse;
+import com.logistica.purchase.dto.StatsResponse;
 import com.logistica.purchase.service.PurchaseRequestService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/v1/purchase/requests")
-@CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class PurchaseRequestController {
 
-    private final PurchaseRequestService service;
-
-    public PurchaseRequestController(PurchaseRequestService service) {
-        this.service = service;
-    }
+    private final PurchaseRequestService purchaseRequestService;
 
     @GetMapping
-    public List<PurchaseRequest> getAll() {
-        return service.getAll();
+    @ResponseStatus(HttpStatus.OK)
+    public List<PurchaseRequestResponse> getAll() {
+        return purchaseRequestService.getAll();
     }
 
     @GetMapping("/{id}")
-    public PurchaseRequest getById(@PathVariable Long id) {
-        return service.getById(id).orElseThrow();
+    @ResponseStatus(HttpStatus.OK)
+    public PurchaseRequestResponse getById(@PathVariable Long id) {
+        return purchaseRequestService.getById(id);
     }
 
     @PostMapping
-    public PurchaseRequest create(@RequestBody PurchaseRequest request) {
-        return service.save(request);
+    @ResponseStatus(HttpStatus.CREATED)
+    public PurchaseRequestResponse create(@Valid @RequestBody PurchaseRequestCreateRequest request) {
+        return purchaseRequestService.create(request);
     }
 
     @PutMapping("/{id}")
-    public PurchaseRequest updateRequest(@PathVariable Long id,
-                                         @RequestBody PurchaseRequest request) {
-        return service.updateRequest(id, request);
+    @ResponseStatus(HttpStatus.OK)
+    public PurchaseRequestResponse updateStatus(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        return purchaseRequestService.updateStatus(id, Objects.toString(body.get("estado")));
     }
 
     @GetMapping("/stats")
-    public Map<String, Object> getStats() {
-        return service.getStats();
+    @ResponseStatus(HttpStatus.OK)
+    public StatsResponse getStats() {
+        return purchaseRequestService.getStats();
     }
 
     @GetMapping("/inventory")
-    public List<PurchaseRequest> getInventory() {
-        return service.getApprovedRequests();
+    @ResponseStatus(HttpStatus.OK)
+    public List<PurchaseRequestResponse> getApproved() {
+        return purchaseRequestService.getApproved();
     }
 }

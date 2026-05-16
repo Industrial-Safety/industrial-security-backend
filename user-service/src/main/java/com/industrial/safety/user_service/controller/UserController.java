@@ -61,6 +61,12 @@ public class UserController
         return userService.getUserByEmail(email);
     }
 
+    @GetMapping("/by-dni")
+    @ResponseStatus(HttpStatus.OK)
+    public UserResponse getUserByDni(@RequestParam String dni) {
+        return userService.getUserByDni(dni);
+    }
+
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public UserResponse updateUser(@PathVariable String id, @Valid @RequestBody UserRequest userRequest) {
