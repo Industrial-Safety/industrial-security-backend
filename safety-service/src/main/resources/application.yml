@@ -1,24 +1,5 @@
-server:
-  port: 8085
-
 spring:
   application:
     name: safety-service
-
-  datasource:
-    url: jdbc:postgresql://localhost:5432/safety_db
-    username: postgres
-    password: root
-    driver-class-name: org.postgresql.Driver
-
-  jpa:
-    hibernate:
-      ddl-auto: update        # crea/actualiza tablas autom�ticamente
-    show-sql: true
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
-
-
-
+  config:
+    import: optional:configserver:http://localhost:8888
