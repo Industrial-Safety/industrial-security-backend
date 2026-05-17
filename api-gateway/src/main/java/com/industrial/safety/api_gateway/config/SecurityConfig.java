@@ -47,7 +47,9 @@ public class SecurityConfig {
 
                         // Storage
                         .pathMatchers(HttpMethod.GET, "/api/v1/storage/upload-url").hasAnyRole(
-                                Role.ALUMNO.name(), Role.INSTRUCTOR.name(), Role.ADMINISTRADOR.name()
+                                Role.ALUMNO.name(), Role.INSTRUCTOR.name(), Role.ADMINISTRADOR.name(),
+                                Role.TRABAJADOR.name(), Role.MARKETING.name(), Role.JEFE_SEGURIDAD.name(),
+                                Role.GERENCIA_GENERAL.name(), Role.LOGISTICA_ALMACEN.name()
                         )
                         .pathMatchers(HttpMethod.GET, "/api/v1/storage/upload-url/cover").hasAnyRole(
                                 Role.INSTRUCTOR.name(), Role.ADMINISTRADOR.name()
@@ -105,8 +107,12 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.POST, "/api/v1/exams").hasAnyRole(
                                 Role.INSTRUCTOR.name(), Role.ADMINISTRADOR.name()
                         )
+                        // Ranking - visible solo a trabajadores (antes del wildcard de exams)
+                        .pathMatchers(HttpMethod.GET, "/api/v1/exams/ranking").hasRole(Role.TRABAJADOR.name())
                         .pathMatchers(HttpMethod.GET, "/api/v1/exams/**").authenticated()
-                        .pathMatchers(HttpMethod.POST, "/api/v1/exams/*/attempts").hasRole(Role.ALUMNO.name())
+                        .pathMatchers(HttpMethod.POST, "/api/v1/exams/*/attempts").hasAnyRole(
+                                Role.ALUMNO.name(), Role.TRABAJADOR.name()
+                        )
 
                         // Certificates - solo el propio alumno
                         .pathMatchers(HttpMethod.GET, "/api/v1/certificates/**").authenticated()
@@ -115,7 +121,23 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.GET, "/api/v1/purchase/epp/deliveries").hasAnyRole(
                                 Role.LOGISTICA_ALMACEN.name(), Role.TRABAJADOR.name()
                         )
+                        // Gerencia puede ver y aprobar/rechazar solicitudes de compra
+                        .pathMatchers(HttpMethod.GET, "/api/v1/purchase/requests", "/api/v1/purchase/requests/**").hasAnyRole(
+                                Role.LOGISTICA_ALMACEN.name(), Role.GERENCIA_GENERAL.name()
+                        )
+                        .pathMatchers(HttpMethod.PUT, "/api/v1/purchase/requests/**").hasAnyRole(
+                                Role.LOGISTICA_ALMACEN.name(), Role.GERENCIA_GENERAL.name()
+                        )
                         .pathMatchers("/api/v1/purchase/**").hasRole(Role.LOGISTICA_ALMACEN.name())
+
+                        // Safety - incidentes de seguridad industrial
+                        .pathMatchers(HttpMethod.POST, "/api/v1/incidents").permitAll()
+                        .pathMatchers(HttpMethod.PATCH, "/api/v1/incidents/*/review").hasAnyRole(
+                                Role.JEFE_SEGURIDAD.name(), Role.ADMINISTRADOR.name()
+                        )
+                        .pathMatchers(HttpMethod.GET, "/api/v1/incidents/**").hasAnyRole(
+                                Role.JEFE_SEGURIDAD.name(), Role.ADMINISTRADOR.name(), Role.GERENCIA_GENERAL.name()
+                        )
 
                         .anyExchange().authenticated())
                 .oauth2Login(Customizer.withDefaults())
