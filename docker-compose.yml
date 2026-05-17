@@ -93,6 +93,18 @@ services:
     volumes:
       - purchase_data:/var/lib/postgresql/data
 
+  safety-db:
+    image: postgres:16-alpine
+    container_name: epp-db
+    ports:
+      - "5440:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: safety-db
+    volumes:
+      - safety_data:/var/lib/postgresql/data
+
   rabbitmq:
     image: rabbitmq:3.13-management
     container_name: rabbitmq
@@ -142,3 +154,4 @@ volumes:
   exam_data:
   rabbitmq_data:
   redis_data:
+  safety_data:
