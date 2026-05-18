@@ -26,8 +26,17 @@ public class UserServiceImpl implements UserService {
     private final QrService qrService;
     private final KeycloakService keycloakService;
 
+    // Normaliza el email a minúsculas y sin espacios. Keycloak trata los emails
+    // como case-insensitive; si la BD guarda variantes de capitalización se generan
+    // registros duplicados y el keycloakId queda vacío. Normalizar en el punto de
+    // entrada lo previene de raíz.
+    private String normalizeEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase();
+    }
+
     @Override
     public UserCreationResult createUser(UserRequest userRequest) {
+        userRequest.setEmail(normalizeEmail(userRequest.getEmail()));
         var userExistente = userRepository.findByEmail(userRequest.getEmail());
         if (userExistente.isPresent()) {
             User existing = userExistente.get();
@@ -99,8 +108,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponse getUserByEmail(String email) {
-        User user = userRepository.findByEmail(email).orElseThrow(
-                () -> new ResourceNotFoundException("No existe el email ", "email", email)
+        String normalized = normalizeEmail(email);
+        User user = userRepository.findByEmail(normalized).orElseThrow(
+                () -> new ResourceNotFoundException("No existe el email ", "email", normalized)
         );
         return userMapper.toUserResponse(user);
     }
@@ -127,6 +137,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponse createUserAdmin(UserRequest userRequest) {
+        userRequest.setEmail(normalizeEmail(userRequest.getEmail()));
         if (userRepository.findByEmail(userRequest.getEmail()).isPresent()) {
             throw new DuplicateEmailException(userRequest.getEmail());
         }
@@ -163,7 +174,7 @@ public class UserServiceImpl implements UserService {
                 .map(user -> { user.setMustChangePassword(false); userRepository.save(user); return true; })
                 .orElse(false);
         if (!updated && email != null && !email.isBlank()) {
-            userRepository.findByEmail(email).ifPresent(user -> {
+            userRepository.findByEmail(normalizeEmail(email)).ifPresent(user -> {
                 user.setMustChangePassword(false);
                 userRepository.save(user);
             });

@@ -1,5 +1,7 @@
 package com.industrial.safety.order_service.service;
 
+import com.industrial.safety.order_service.dto.AssignCoursesRequest;
+import com.industrial.safety.order_service.dto.AssignCoursesResponse;
 import com.industrial.safety.order_service.dto.OrderRequest;
 import com.industrial.safety.order_service.dto.OrderResponse;
 import com.industrial.safety.order_service.dto.event.PaymentResultEvent;
@@ -24,4 +26,7 @@ public interface OrderService {
     void updateStatus(String orderNumber, OrderStatus orderStatus);
 
     void processPaymentResult(PaymentResultEvent event);
+
+    /** Asignación administrativa de cursos a trabajadores (órdenes COMPLETED sin pago). */
+    AssignCoursesResponse assignCoursesToWorkers(AssignCoursesRequest request);
 }

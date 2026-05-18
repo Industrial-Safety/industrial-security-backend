@@ -1,5 +1,6 @@
 package com.industrial.safety.safety_service.model;
 
+import com.industrial.safety.safety_service.model.enums.AppealStatus;
 import com.industrial.safety.safety_service.model.enums.IncidentStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -50,6 +51,32 @@ public class Incident {
 
     @Column(name = "review_notes")
     private String reviewNotes;
+
+    // Trabajador al que el jefe de seguridad asigna la infracción (user_id Keycloak)
+    @Column(name = "worker_id")
+    private String workerId;
+
+    // Puntos descontados al aprobar (snapshot para auditoría / vista del trabajador)
+    @Column(name = "points_deducted")
+    private Integer pointsDeducted;
+
+    // --- Apelación del trabajador ---
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "appeal_status")
+    private AppealStatus appealStatus;        // null = sin apelación
+
+    @Column(name = "appeal_reason", length = 2000)
+    private String appealReason;              // motivo escrito por el trabajador
+
+    @Column(name = "appealed_at")
+    private OffsetDateTime appealedAt;
+
+    @Column(name = "appeal_resolved_at")
+    private OffsetDateTime appealResolvedAt;
+
+    @Column(name = "appeal_resolution_notes", length = 2000)
+    private String appealResolutionNotes;    // justificación del jefe al resolver
 
     @PrePersist
     public void prePersist() {

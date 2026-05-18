@@ -1,5 +1,7 @@
 package com.industrial.safety.order_service.service.impl;
 
+import com.industrial.safety.order_service.dto.AssignCoursesRequest;
+import com.industrial.safety.order_service.dto.AssignCoursesResponse;
 import com.industrial.safety.order_service.dto.OrderRequest;
 import com.industrial.safety.order_service.dto.OrderResponse;
 import com.industrial.safety.order_service.dto.event.EmailNotificationEvent;
@@ -191,6 +193,79 @@ public class OrderServiceImpl implements OrderService {
             orderRepository.save(order);
             fanOutFailure(order, event);
         }
+    }
+
+    @Override
+    @Transactional
+    public AssignCoursesResponse assignCoursesToWorkers(AssignCoursesRequest request) {
+        if (request.getCourses() == null || request.getCourses().isEmpty()) {
+            throw new IllegalArgumentException("Debe seleccionar al menos un curso");
+        }
+        if (request.getWorkers() == null || request.getWorkers().isEmpty()) {
+            throw new IllegalArgumentException("Debe haber al menos un trabajador destino");
+        }
+
+        int ordersCreated = 0;
+        int skipped = 0;
+
+        for (AssignCoursesRequest.WorkerTarget worker : request.getWorkers()) {
+            if (worker.getUserId() == null || worker.getUserId().isBlank()) {
+                skipped++;
+                continue;
+            }
+
+            // Idempotencia: no reasignar cursos que el trabajador ya tiene COMPLETED.
+            var ownedCourseIds = orderRepository.findByUserId(worker.getUserId()).stream()
+                    .filter(o -> o.getOrderStatus() == OrderStatus.COMPLETED)
+                    .filter(o -> o.getOrderLineItemsList() != null)
+                    .flatMap(o -> o.getOrderLineItemsList().stream())
+                    .map(OrderLineItems::getIdCurso)
+                    .collect(Collectors.toSet());
+
+            List<OrderLineItems> newItems = request.getCourses().stream()
+                    .filter(c -> c.getIdCurso() != null && !ownedCourseIds.contains(c.getIdCurso()))
+                    .map(c -> OrderLineItems.builder()
+                            .idCurso(c.getIdCurso())
+                            .courseName(c.getCourseName())
+                            .price(BigDecimal.ZERO)
+                            .build())
+                    .toList();
+
+            if (newItems.isEmpty()) {
+                skipped++;
+                continue;
+            }
+
+            Order order = Order.builder()
+                    .orderNumber("ASG-" + UUID.randomUUID().toString()
+                            .replace("-", "").substring(0, 16).toUpperCase())
+                    .userId(worker.getUserId())
+                    .userEmail(worker.getUserEmail())
+                    .currency("USD")
+                    .originalAmount(BigDecimal.ZERO)
+                    .discountAmount(BigDecimal.ZERO)
+                    .totalAmount(BigDecimal.ZERO)
+                    .orderStatus(OrderStatus.COMPLETED)
+                    .paidAt(Instant.now())
+                    .orderLineItemsList(newItems)
+                    .build();
+
+            orderRepository.save(order);
+            ordersCreated++;
+
+            // Notifica al trabajador vía RabbitMQ (reusa el binding existente de alertas).
+            orderEventPublisher.publishWebAlert(new WebAlertEvent(
+                    worker.getUserId(),
+                    "Cursos de capacitación asignados",
+                    "Se te asignaron " + newItems.size()
+                            + " curso(s) de capacitación obligatoria. Revísalos en Mi Aprendizaje."
+            ), true);
+
+            log.info("Asignados {} curso(s) al trabajador {} (orden {})",
+                    newItems.size(), worker.getUserId(), order.getOrderNumber());
+        }
+
+        return new AssignCoursesResponse(request.getWorkers().size(), ordersCreated, skipped);
     }
 
     private void fanOutSuccess(Order order, PaymentResultEvent event) {

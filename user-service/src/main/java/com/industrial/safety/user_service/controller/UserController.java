@@ -45,8 +45,20 @@ public class UserController
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public List<UserResponse> getAllUsers() {
-        return userService.toListUser();
+    public List<UserResponse> getAllUsers(@RequestParam(required = false) String role) {
+        List<UserResponse> users = userService.toListUser();
+        if (role == null || role.isBlank()) {
+            return users;
+        }
+        String wanted = normalizeRole(role);
+        return users.stream()
+                .filter(u -> u.getRole() != null && normalizeRole(u.getRole()).equals(wanted))
+                .toList();
+    }
+
+    private String normalizeRole(String role) {
+        String r = role.trim().toUpperCase();
+        return r.startsWith("ROLE_") ? r.substring(5) : r;
     }
 
     @GetMapping("/{id}")

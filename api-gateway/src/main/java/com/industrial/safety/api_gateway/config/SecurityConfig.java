@@ -82,6 +82,10 @@ public class SecurityConfig {
                                 Role.TRABAJADOR.name(), Role.MARKETING.name(), Role.JEFE_SEGURIDAD.name(),
                                 Role.GERENCIA_GENERAL.name(), Role.LOGISTICA_ALMACEN.name()
                         )
+                        // Lista de usuarios (combo box de TRABAJADOR para el jefe de seguridad)
+                        .pathMatchers(HttpMethod.GET, "/api/v1/users").hasAnyRole(
+                                Role.ADMINISTRADOR.name(), Role.JEFE_SEGURIDAD.name()
+                        )
                         .pathMatchers(HttpMethod.GET, "/api/v1/users/**").hasAnyRole(
                                 Role.ADMINISTRADOR.name()
                         )
@@ -90,6 +94,10 @@ public class SecurityConfig {
                         )
 
                         // Orders - cualquier usuario autenticado (el rol se asigna async tras OAuth signup)
+                        // Asignación masiva de cursos: solo administrador (antes del matcher genérico)
+                        .pathMatchers(HttpMethod.POST, "/api/v1/orders/admin/**").hasRole(
+                                Role.ADMINISTRADOR.name()
+                        )
                         .pathMatchers(HttpMethod.POST, "/api/v1/orders").authenticated()
                         .pathMatchers(HttpMethod.GET, "/api/v1/orders/**").authenticated()
                         .pathMatchers(HttpMethod.DELETE, "/api/v1/orders/**").authenticated()
@@ -135,6 +143,19 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.PATCH, "/api/v1/incidents/*/review").hasAnyRole(
                                 Role.JEFE_SEGURIDAD.name(), Role.ADMINISTRADOR.name()
                         )
+                        // Apelaciones: el trabajador apela; el jefe que aprobó las resuelve
+                        .pathMatchers(HttpMethod.POST, "/api/v1/incidents/*/appeal").hasRole(
+                                Role.TRABAJADOR.name()
+                        )
+                        .pathMatchers(HttpMethod.PATCH, "/api/v1/incidents/*/appeal/resolve").hasAnyRole(
+                                Role.JEFE_SEGURIDAD.name(), Role.ADMINISTRADOR.name()
+                        )
+                        .pathMatchers(HttpMethod.GET, "/api/v1/incidents/appeals").hasAnyRole(
+                                Role.JEFE_SEGURIDAD.name(), Role.ADMINISTRADOR.name()
+                        )
+                        // El trabajador ve sus propias infracciones y su puntaje (antes del wildcard)
+                        .pathMatchers(HttpMethod.GET, "/api/v1/incidents/mine").hasRole(Role.TRABAJADOR.name())
+                        .pathMatchers(HttpMethod.GET, "/api/v1/safety-score/me").hasRole(Role.TRABAJADOR.name())
                         .pathMatchers(HttpMethod.GET, "/api/v1/incidents/**").hasAnyRole(
                                 Role.JEFE_SEGURIDAD.name(), Role.ADMINISTRADOR.name(), Role.GERENCIA_GENERAL.name()
                         )
