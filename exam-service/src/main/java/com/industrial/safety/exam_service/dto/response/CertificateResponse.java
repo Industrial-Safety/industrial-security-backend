@@ -4,6 +4,7 @@ import java.time.Instant;
 
 public record CertificateResponse(
         Long id,
+        String studentName,
         String courseId,
         String courseName,
         String instructorName,
