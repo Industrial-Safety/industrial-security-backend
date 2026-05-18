@@ -1,10 +1,53 @@
 spring:
   application:
     name: course-service
+  threads:
+    virtual:
+      enabled: true
   config:
-    import: "optional:configserver:http://localhost:8888"
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: http://localhost:9090/realms/industrial-safety
+    import: aws-parameterstore:/config/application/,aws-parameterstore:/config/course-service/
+  cloud:
+    aws:
+      parameterstore:
+        region: us-east-1
+  data:
+    redis:
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 4
+
+server:
+  port: 8080
+  error:
+    include-message: always
+    include-stacktrace: never
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      aws-s3:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 15s
+        permitted-number-of-calls-in-half-open-state: 3
+        register-health-indicator: true
+  retry:
+    instances:
+      aws-s3:
+        max-attempts: 3
+        wait-duration: 500ms
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - software.amazon.awssdk.core.exception.SdkClientException
+          - java.net.ConnectException
+          - java.io.IOException
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,circuitbreakers,retries
+  endpoint:
+    health:
+      show-details: when_authorized
