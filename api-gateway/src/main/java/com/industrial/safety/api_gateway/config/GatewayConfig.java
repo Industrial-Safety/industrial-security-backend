@@ -42,7 +42,8 @@ public class GatewayConfig {
                         .path("/ws/**")
                         .uri("lb:ws://NOTIFICATION-SERVICE"))
                 .route("safety-service", c->c
-                        .path("/api/v1/incidents", "/api/v1/incidents/**")
+                        .path("/api/v1/incidents", "/api/v1/incidents/**",
+                                "/api/v1/safety-score", "/api/v1/safety-score/**")
                         .uri("lb://SAFETY-SERVICE"))
                 .build();
     }

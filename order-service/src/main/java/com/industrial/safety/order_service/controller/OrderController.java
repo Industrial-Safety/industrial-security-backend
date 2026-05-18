@@ -1,5 +1,7 @@
 package com.industrial.safety.order_service.controller;
 
+import com.industrial.safety.order_service.dto.AssignCoursesRequest;
+import com.industrial.safety.order_service.dto.AssignCoursesResponse;
 import com.industrial.safety.order_service.dto.OrderRequest;
 import com.industrial.safety.order_service.dto.OrderResponse;
 import com.industrial.safety.order_service.service.OrderService;
@@ -29,6 +31,13 @@ public class OrderController {
     @ResponseStatus(HttpStatus.CREATED)
     public OrderResponse createOrder(@Valid @RequestBody OrderRequest request) {
         return orderService.createOrder(request);
+    }
+
+    // Asignación administrativa de cursos a trabajadores (sin pago)
+    @PostMapping("/admin/assign-courses")
+    @ResponseStatus(HttpStatus.CREATED)
+    public AssignCoursesResponse assignCourses(@Valid @RequestBody AssignCoursesRequest request) {
+        return orderService.assignCoursesToWorkers(request);
     }
 
     @GetMapping("/{id}")
