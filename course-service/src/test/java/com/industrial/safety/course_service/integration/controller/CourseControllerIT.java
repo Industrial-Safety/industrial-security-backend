@@ -18,12 +18,8 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.containers.MongoDBContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -35,21 +31,19 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.MOCK,
+        properties = {
+                "spring.cloud.config.enabled=false",
+                "eureka.client.enabled=false",
+                "spring.jpa.hibernate.ddl-auto=create-drop"
+        }
+)
 @AutoConfigureMockMvc
-@Testcontainers
 @Tag("integration")
 @ActiveProfiles("test")
 @DisplayName("CourseController — Pruebas de Integración")
 class CourseControllerIT {
-
-    @Container
-    static MongoDBContainer mongoDBContainer = new MongoDBContainer("mongo:7.0");
-
-    @DynamicPropertySource
-    static void setMongoProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.data.mongodb.uri", mongoDBContainer::getReplicaSetUrl);
-    }
 
     @Autowired MockMvc        mockMvc;
     @Autowired ObjectMapper   objectMapper;
@@ -57,6 +51,7 @@ class CourseControllerIT {
 
     // AssetCacheService depende de Redis; lo mockeamos para el test de integración
     @MockitoBean AssetCacheService assetCacheService;
+    @MockitoBean S3Presigner        s3Presigner;
 
     private static final String BASE_URL = "/api/v1/course";
 
