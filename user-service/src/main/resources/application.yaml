@@ -2,4 +2,56 @@ spring:
   application:
     name: user-service
   config:
-    import: "optional:configserver:http://localhost:8888"
+    import: aws-parameterstore:/config/application/,aws-parameterstore:/config/user-service/
+  cloud:
+    aws:
+      parameterstore:
+        region: us-east-1
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      max-lifetime: 240000
+      idle-timeout: 120000
+      keepalive-time: 60000
+      connection-test-query: SELECT 1
+      validation-timeout: 3000
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+server:
+  port: 8081
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      keycloak:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 15s
+        permitted-number-of-calls-in-half-open-state: 3
+        register-health-indicator: true
+  retry:
+    instances:
+      keycloak:
+        max-attempts: 3
+        wait-duration: 500ms
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - jakarta.ws.rs.ProcessingException
+          - java.net.ConnectException
+          - java.io.IOException
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,circuitbreakers,retries
+  endpoint:
+    health:
+      show-details: when_authorized
