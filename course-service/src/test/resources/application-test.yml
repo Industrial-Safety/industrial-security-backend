@@ -6,7 +6,7 @@ spring:
       enabled: false
   data:
     mongodb:
-      uri: ${MONGO_URI:mongodb://localhost:27017/course_test}
+      uri: mongodb://localhost:27019/course-test
     redis:
       host: localhost
       port: 6379
@@ -17,8 +17,20 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          # Apunta a un issuer ficticio; en tests se usa MockMvc con jwt() postprocessor
-          issuer-uri: http://localhost:9090/realms/industrial-safety
+          # jwk-set-uri se carga lazy (no OIDC discovery al startup); en tests se usa MockMvc jwt() postprocessor
+          jwk-set-uri: http://localhost:9090/realms/industrial-safety/protocol/openid-connect/certs
+
+cloud:
+  aws:
+    credentials:
+      access-key: dummy-access-key
+      secret-key: dummy-secret-key
+    region:
+      static: us-east-1
+
+aws:
+  s3:
+    bucket-name: test-bucket
 
 eureka:
   client:
