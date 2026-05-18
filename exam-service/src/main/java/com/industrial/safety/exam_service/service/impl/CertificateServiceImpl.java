@@ -34,7 +34,7 @@ public class CertificateServiceImpl implements CertificateService {
 
     private CertificateResponse toResponse(Certificate c) {
         return new CertificateResponse(
-                c.getId(), c.getCourseId(), c.getCourseName(),
+                c.getId(), c.getStudentName(), c.getCourseId(), c.getCourseName(),
                 c.getInstructorName(), c.getScore(),
                 c.getIssuedAt(), pdfGenerator.presignUrl(c.getCertificateUrl()));
     }

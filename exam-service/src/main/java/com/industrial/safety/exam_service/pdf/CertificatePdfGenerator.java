@@ -105,56 +105,71 @@ public class CertificatePdfGenerator {
 
     private byte[] render(String studentName, String courseName,
                           String instructorName, Integer score) {
+        // Landscape A4: 842 x 595 pt  (iText origin = bottom-left)
         try (ByteArrayOutputStream out = new ByteArrayOutputStream();
-             Document document = new Document(new Rectangle(842, 595))) {
+             Document document = new Document(new Rectangle(842, 595), 0, 0, 0, 0)) {
 
             PdfWriter writer = PdfWriter.getInstance(document, out);
             document.open();
 
-            PdfContentByte canvas = writer.getDirectContent();
+            PdfContentByte cb = writer.getDirectContent();
 
+            // --- Background image ---
             try {
                 Image bg = Image.getInstance(
                         getClass().getClassLoader().getResource("certificate.png"));
                 bg.setAbsolutePosition(0, 0);
-                bg.scaleToFit(842, 595);
-                canvas.addImage(bg);
+                bg.scaleAbsolute(842, 595);
+                cb.addImage(bg);
             } catch (Exception e) {
-                log.warn("certificate.png not found in classpath, generating plain PDF");
+                log.warn("certificate.png not found in classpath, using plain background");
+                // Fallback: cream background
+                cb.setColorFill(new Color(254, 252, 245));
+                cb.rectangle(0, 0, 842, 595);
+                cb.fill();
             }
 
-            Font nameFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 36, new Color(180, 140, 20));
-            Paragraph name = new Paragraph(studentName, nameFont);
-            name.setAlignment(Element.ALIGN_CENTER);
-            name.setSpacingBefore(195f);
-            document.add(name);
+            // Helper: centre-aligned text at absolute Y (iText bottom-up)
+            // The template's name slot is visually ~58% from the top → y ≈ 595*0.42 = 250 pt from bottom
+            // Calibrated by measuring the template image zones:
+            //   Title "CERTIFICATE OF COMPLETION"  → y ≈ 435
+            //   "THIS IS TO CERTIFY THAT"          → y ≈ 330
+            //   Name (script)                      → y ≈ 265
+            //   "HAS SUCCESSFULLY COMPLETED THE"   → y ≈ 215
+            //   Course name                        → y ≈ 185
+            //   Date / score line                  → y ≈ 152
+            //   Instructor (right)                 → y ≈  98
 
-            Font courseFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18, new Color(50, 50, 50));
-            Paragraph course = new Paragraph(courseName.toUpperCase(), courseFont);
-            course.setAlignment(Element.ALIGN_CENTER);
-            course.setSpacingBefore(10f);
-            document.add(course);
+            Font nameFont  = FontFactory.getFont(FontFactory.TIMES_BOLDITALIC, 38, new Color(160, 110, 15));
+            Font courseFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD,  16, new Color(40,  40,  40));
+            Font detailFont = FontFactory.getFont(FontFactory.HELVETICA,       10, new Color(70,  70,  70));
+            Font instrFont  = FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE,11, new Color(55,  55,  55));
 
-            Font detailFont = FontFactory.getFont(FontFactory.HELVETICA, 11, new Color(80, 80, 80));
-            Paragraph detail = new Paragraph(
-                    "Completado con distinción el " + DATE_FMT.format(Instant.now())
-                    + "  ·  Puntaje: " + score + "%", detailFont);
-            detail.setAlignment(Element.ALIGN_CENTER);
-            detail.setSpacingBefore(8f);
-            document.add(detail);
+            // Student name — most prominent element
+            com.lowagie.text.pdf.ColumnText.showTextAligned(
+                    cb, Element.ALIGN_CENTER,
+                    new com.lowagie.text.Phrase(studentName, nameFont),
+                    421, 265, 0);
 
-            Font instrFont = FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 12, new Color(60, 60, 60));
-            Paragraph instr = new Paragraph(instructorName + "\n(Instructor del Curso)", instrFont);
-            instr.setAlignment(Element.ALIGN_RIGHT);
-            instr.setSpacingBefore(60f);
-            instr.setIndentationRight(80f);
-            document.add(instr);
+            // Course name
+            com.lowagie.text.pdf.ColumnText.showTextAligned(
+                    cb, Element.ALIGN_CENTER,
+                    new com.lowagie.text.Phrase(courseName.toUpperCase(), courseFont),
+                    421, 185, 0);
 
-            Font webFont = FontFactory.getFont(FontFactory.HELVETICA, 9, new Color(130, 130, 130));
-            Paragraph web = new Paragraph("www.industrialsafetytech.com", webFont);
-            web.setAlignment(Element.ALIGN_CENTER);
-            web.setSpacingBefore(4f);
-            document.add(web);
+            // Date + score line
+            String detail = "Completado con distinción el " + DATE_FMT.format(Instant.now())
+                           + "   ·   Puntaje: " + score + "%";
+            com.lowagie.text.pdf.ColumnText.showTextAligned(
+                    cb, Element.ALIGN_CENTER,
+                    new com.lowagie.text.Phrase(detail, detailFont),
+                    421, 152, 0);
+
+            // Instructor — right-aligned, bottom section
+            com.lowagie.text.pdf.ColumnText.showTextAligned(
+                    cb, Element.ALIGN_CENTER,
+                    new com.lowagie.text.Phrase(instructorName + "\n(Instructor del Curso)", instrFont),
+                    630, 98, 0);
 
             document.close();
             return out.toByteArray();
