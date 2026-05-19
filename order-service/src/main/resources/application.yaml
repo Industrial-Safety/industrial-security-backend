@@ -1,5 +1,54 @@
+server:
+  port: 8082
+  error:
+    include-message: always
+    include-stacktrace: never
+
 spring:
   application:
     name: order-service
   config:
-    import: optional:configserver:http://localhost:8888
+    import: aws-parameterstore:/config/application/,aws-parameterstore:/config/order-service/
+  threads:
+    virtual:
+      enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 25
+        order_inserts: true
+        order_updates: true
+  rabbitmq:
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 10
+        retry:
+          enabled: true
+          initial-interval: 1s
+          multiplier: 2
+          max-attempts: 3
+          max-interval: 10s
+    publisher-confirm-type: correlated
+    publisher-returns: true
+  cloud:
+    aws:
+      parameterstore:
+        region: us-east-1
+      stack:
+        auto: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+logging:
+  level:
+    com.industrial.safety: INFO
+    org.springframework.amqp: WARN

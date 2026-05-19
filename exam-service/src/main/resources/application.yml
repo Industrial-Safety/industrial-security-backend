@@ -1,5 +1,71 @@
+server:
+  port: 8086
+  error:
+    include-message: always
+    include-stacktrace: never
+
 spring:
   application:
     name: exam-service
   config:
-    import: optional:configserver:http://localhost:8888
+    import: aws-parameterstore:/config/application/,aws-parameterstore:/config/exam-service/
+  threads:
+    virtual:
+      enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 25
+        order_inserts: true
+        order_updates: true
+  rabbitmq:
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 10
+    publisher-confirm-type: correlated
+    publisher-returns: true
+  cloud:
+    aws:
+      parameterstore:
+        region: us-east-1
+      stack:
+        auto: false
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      aws-s3:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 15s
+        permitted-number-of-calls-in-half-open-state: 3
+        register-health-indicator: true
+  retry:
+    instances:
+      aws-s3:
+        max-attempts: 3
+        wait-duration: 500ms
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - software.amazon.awssdk.core.exception.SdkClientException
+          - java.net.ConnectException
+          - java.io.IOException
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,circuitbreakers,retries
+  endpoint:
+    health:
+      show-details: when_authorized
+
+logging:
+  level:
+    com.industrial.safety: INFO
+    org.springframework.amqp: WARN
