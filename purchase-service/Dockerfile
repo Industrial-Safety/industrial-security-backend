@@ -7,5 +7,5 @@ RUN ./mvnw clean package -Dmaven.test.skip=true
 FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 COPY --from=builder /app/target/*.jar app.jar
-EXPOSE 8084
+EXPOSE 8087
 ENTRYPOINT ["java", "-jar", "app.jar"]

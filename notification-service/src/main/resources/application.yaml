@@ -1,5 +1,66 @@
+server:
+  port: 8084
+  error:
+    include-message: always
+    include-stacktrace: never
+
 spring:
   application:
     name: notification-service
   config:
-    import: optional:configserver:http://localhost:8888
+    import: aws-parameterstore:/config/application/,aws-parameterstore:/config/notification-service/
+  threads:
+    virtual:
+      enabled: true
+  rabbitmq:
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 10
+        retry:
+          enabled: true
+          initial-interval: 1s
+          multiplier: 2
+          max-attempts: 3
+          max-interval: 10s
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+  cloud:
+    aws:
+      parameterstore:
+        region: us-east-1
+      stack:
+        auto: false
+
+notification:
+  email:
+    from: ${MAIL_FROM:no-reply@industrialsafety.com}
+    from-name: "Industrial Safety Tech"
+  websocket:
+    endpoint: /ws
+    user-destination-prefix: /user
+    broker-prefix: /topic
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+logging:
+  level:
+    com.industrial.safety: INFO
+    org.springframework.amqp: WARN
