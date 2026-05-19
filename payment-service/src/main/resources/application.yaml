@@ -1,5 +1,98 @@
+server:
+  port: 8083
+  error:
+    include-message: always
+    include-stacktrace: never
+
 spring:
   application:
     name: payment-service
   config:
-    import: optional:configserver:http://localhost:8888
+    import: aws-parameterstore:/config/application/,aws-parameterstore:/config/payment-service/
+  threads:
+    virtual:
+      enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 25
+        order_inserts: true
+        order_updates: true
+  rabbitmq:
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 10
+        retry:
+          enabled: true
+          initial-interval: 1s
+          multiplier: 2
+          max-attempts: 3
+          max-interval: 10s
+    publisher-confirm-type: correlated
+    publisher-returns: true
+  cloud:
+    aws:
+      parameterstore:
+        region: us-east-1
+      stack:
+        auto: false
+
+mercadopago:
+  api:
+    base-url: ${MP_BASE_URL:https://api.mercadopago.com}
+    access-token: ${MP_ACCESS_TOKEN}
+    timeout-millis: 8000
+  webhook:
+    secret: ${MP_WEBHOOK_SECRET:}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      mercadopago:
+        sliding-window-size: 20
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 5
+        register-health-indicator: true
+      aws-s3:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 15s
+        permitted-number-of-calls-in-half-open-state: 3
+        register-health-indicator: true
+  retry:
+    instances:
+      mercadopago:
+        max-attempts: 3
+        wait-duration: 500ms
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - org.springframework.web.reactive.function.client.WebClientRequestException
+          - java.io.IOException
+      aws-s3:
+        max-attempts: 3
+        wait-duration: 500ms
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - software.amazon.awssdk.core.exception.SdkClientException
+          - java.net.ConnectException
+          - java.io.IOException
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,circuitbreakers,retries
+  endpoint:
+    health:
+      show-details: when_authorized
+
+logging:
+  level:
+    com.industrial.safety: INFO
+    org.springframework.amqp: WARN
