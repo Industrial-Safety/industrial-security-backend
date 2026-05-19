@@ -1,10 +1,30 @@
 spring:
   application:
     name: chat-service
+  threads:
+    virtual:
+      enabled: true
   config:
-    import: "optional:configserver:http://localhost:8888"
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: http://localhost:9090/realms/industrial-safety
+    import: aws-parameterstore:/config/application/,aws-parameterstore:/config/chat-service/
+  cloud:
+    aws:
+      parameterstore:
+        region: us-east-1
+  data:
+    mongodb:
+      uri: ${MONGODB_URI}
+
+server:
+  port: 8085
+  error:
+    include-message: always
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
