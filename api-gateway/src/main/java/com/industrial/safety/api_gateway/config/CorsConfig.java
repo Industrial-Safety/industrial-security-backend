@@ -15,8 +15,8 @@ public class CorsConfig
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
         corsConfiguration.setAllowedOrigins(List.of(
-                "http://localhost:3000",
-                "https://industrial-safety-tech.vercel.app"
+                "https://industrial-safety-vf.vercel.app",
+                "http://localhost:3000"
         ));
         corsConfiguration.setAllowedMethods(List.of(
                 "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"

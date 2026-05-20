@@ -25,7 +25,6 @@ public class SecurityConfig {
         serverHttpSecurity.csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .cors(Customizer.withDefaults())
                 .authorizeExchange(authorizeExchangeSpec -> authorizeExchangeSpec
-                        .pathMatchers("/eureka/**").permitAll()
                         // Actuator expuesto para diagnóstico local (gateway routes, health, etc.)
                         .pathMatchers("/actuator/**").permitAll()
 
@@ -138,6 +137,9 @@ public class SecurityConfig {
                         )
                         .pathMatchers("/api/v1/purchase/**").hasRole(Role.LOGISTICA_ALMACEN.name())
 
+                        // WebSocket - el browser no puede enviar Bearer en el handshake inicial
+                        .pathMatchers("/ws/**", "/ws-sockjs/**").permitAll()
+
                         // Safety - incidentes de seguridad industrial
                         .pathMatchers(HttpMethod.POST, "/api/v1/incidents").permitAll()
                         .pathMatchers(HttpMethod.PATCH, "/api/v1/incidents/*/review").hasAnyRole(
@@ -161,7 +163,6 @@ public class SecurityConfig {
                         )
 
                         .anyExchange().authenticated())
-                .oauth2Login(Customizer.withDefaults())
                 .oauth2ResourceServer(o -> o
                         .jwt(jwtSpec -> jwtSpec.jwtAuthenticationConverter(reactiveJwtAuthenticationConverterAdapter())));
         return serverHttpSecurity.build();
