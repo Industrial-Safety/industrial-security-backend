@@ -26,7 +26,10 @@ public class UserController
     @PostMapping("/register")
     public ResponseEntity<UserResponse> registerStudent(@Valid @RequestBody UserRequest userRequest) {
         userRequest.setRole("ROLE_ALUMNO");
-        userRequest.setMustChangePassword(false); // self-registration never requires a forced password change
+        // Solo forzar false si no viene ya seteado (OAuth puede enviar true para forzar cambio de contraseña)
+        if (userRequest.getMustChangePassword() == null) {
+            userRequest.setMustChangePassword(false);
+        }
         UserCreationResult result = userService.createUser(userRequest);
         HttpStatus status = result.isNew() ? HttpStatus.CREATED : HttpStatus.OK;
         return ResponseEntity.status(status).body(result.user());

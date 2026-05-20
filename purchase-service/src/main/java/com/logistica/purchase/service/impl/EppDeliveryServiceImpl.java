@@ -32,7 +32,7 @@ public class EppDeliveryServiceImpl implements EppDeliveryService {
     private final EppEventPublisher eventPublisher;
     private final RestTemplate restTemplate;
 
-    private static final String USER_SERVICE_URL = "http://user-service.industrial-security.local:8081/api/v1/users/by-dni?dni={dni}";
+    private static final String USER_SERVICE_URL = "http://user-service.industrial-security:8081/api/v1/users/by-dni?dni={dni}";
 
     @Override
     public WorkerResponse searchWorker(String dni) {

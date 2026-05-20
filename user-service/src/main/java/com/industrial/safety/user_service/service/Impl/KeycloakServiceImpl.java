@@ -123,8 +123,11 @@ public class KeycloakServiceImpl implements KeycloakService {
                 log.info("Usuario {} ya existía en Keycloak (409), reutilizando y actualizando contraseña.", userRequest.getEmail());
                 String keycloakId = getUserIdByEmailWithToken(token, userRequest.getEmail());
                 assignRoleWithToken(token, keycloakId, userRequest.getRole());
-                // Actualizar la contraseña para que DefaultPass1! funcione en el primer login
-                updatePasswordWithToken(token, keycloakId, userRequest.getPassword());
+                // Solo actualizar contraseña si NO es usuario OAuth (oauth_user_password no cumple políticas de Keycloak)
+                String pwd = userRequest.getPassword();
+                if (pwd != null && !pwd.equals("oauth_user_password")) {
+                    updatePasswordWithToken(token, keycloakId, pwd);
+                }
                 return keycloakId;
             }
             throw new RuntimeException("Error creando usuario en Keycloak. Status: "
@@ -194,6 +197,28 @@ public class KeycloakServiceImpl implements KeycloakService {
                 new HttpEntity<>(List.of(role), headers), Void.class);
 
         log.info("Rol '{}' asignado a keycloakId={}", normalizedRole, keycloakId);
+
+        // Si el rol asignado NO es ALUMNO, remover ALUMNO (viene de default-roles)
+        if (!"ALUMNO".equalsIgnoreCase(normalizedRole)) {
+            try {
+                String alumnoRoleUrl = serverUrl.trim() + "/admin/realms/" + realm.trim() + "/roles/ALUMNO";
+                HttpHeaders alumnoHeaders = new HttpHeaders();
+                alumnoHeaders.setBearerAuth(token);
+                ResponseEntity<Map> alumnoResp = restTemplate.exchange(
+                        alumnoRoleUrl, HttpMethod.GET, new HttpEntity<>(alumnoHeaders), Map.class);
+                Map<String, Object> alumnoRole = alumnoResp.getBody();
+                if (alumnoRole != null) {
+                    alumnoHeaders.setContentType(MediaType.APPLICATION_JSON);
+                    String deleteUrl = serverUrl.trim() + "/admin/realms/" + realm.trim()
+                            + "/users/" + keycloakId + "/role-mappings/realm";
+                    restTemplate.exchange(deleteUrl, HttpMethod.DELETE,
+                            new HttpEntity<>(List.of(alumnoRole), alumnoHeaders), Void.class);
+                    log.info("Rol ALUMNO removido de keycloakId={} (rol real: {})", keycloakId, normalizedRole);
+                }
+            } catch (Exception e) {
+                log.warn("No se pudo remover rol ALUMNO de keycloakId={}: {}", keycloakId, e.getMessage());
+            }
+        }
     }
 
     // ── Cambiar contraseña ────────────────────────────────────────────────────
