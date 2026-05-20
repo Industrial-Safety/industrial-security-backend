@@ -29,6 +29,11 @@ public class ChatController {
         return chatService.getConversationsForInstructor(instructorId);
     }
 
+    @GetMapping("/support")
+    public List<ConversationResponse> getSupportConversations() {
+        return chatService.getConversationsForInstructor("IS-SUPPORT");
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.OK)
     public ConversationResponse findOrCreateConversation(@Valid @RequestBody ConversationRequest request) {

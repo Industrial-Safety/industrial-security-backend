@@ -34,6 +34,13 @@ public class SecurityConfig {
                                 Role.INSTRUCTOR.name(), Role.ADMINISTRADOR.name()
                         )
                         .pathMatchers(HttpMethod.GET, "/api/v1/course/**").permitAll()
+                        // Marketing puede crear y consultar solicitudes de precio
+                        .pathMatchers(HttpMethod.POST, "/api/v1/course/price-requests").hasAnyRole(
+                                Role.MARKETING.name(), Role.INSTRUCTOR.name(), Role.ADMINISTRADOR.name()
+                        )
+                        .pathMatchers(HttpMethod.GET, "/api/v1/course/price-requests/**").hasAnyRole(
+                                Role.MARKETING.name(), Role.INSTRUCTOR.name(), Role.ADMINISTRADOR.name()
+                        )
                         .pathMatchers(HttpMethod.POST, "/api/v1/course/**").hasAnyRole(
                                 Role.INSTRUCTOR.name(), Role.ADMINISTRADOR.name()
                         )
@@ -69,7 +76,11 @@ public class SecurityConfig {
                                 Role.ADMINISTRADOR.name(),
                                 Role.INSTRUCTOR.name(),
                                 Role.ALUMNO.name(),
-                                Role.TRABAJADOR.name()
+                                Role.TRABAJADOR.name(),
+                                Role.MARKETING.name(),
+                                Role.JEFE_SEGURIDAD.name(),
+                                Role.GERENCIA_GENERAL.name(),
+                                Role.LOGISTICA_ALMACEN.name()
                         )
                         .pathMatchers(HttpMethod.GET, "/api/v1/users/{id}").hasAnyRole(
                                 Role.ALUMNO.name(), Role.ADMINISTRADOR.name(), Role.INSTRUCTOR.name(),
@@ -134,6 +145,10 @@ public class SecurityConfig {
                         )
                         .pathMatchers(HttpMethod.PUT, "/api/v1/purchase/requests/**").hasAnyRole(
                                 Role.LOGISTICA_ALMACEN.name(), Role.GERENCIA_GENERAL.name()
+                        )
+                        // Marketing puede crear solicitudes de compra
+                        .pathMatchers(HttpMethod.POST, "/api/v1/purchase/requests").hasAnyRole(
+                                Role.MARKETING.name(), Role.LOGISTICA_ALMACEN.name()
                         )
                         .pathMatchers("/api/v1/purchase/**").hasRole(Role.LOGISTICA_ALMACEN.name())
 
