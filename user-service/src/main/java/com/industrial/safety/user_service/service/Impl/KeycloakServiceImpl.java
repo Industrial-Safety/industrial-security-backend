@@ -4,130 +4,261 @@ import com.industrial.safety.user_service.dto.UserRequest;
 import com.industrial.safety.user_service.service.KeycloakService;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
-import jakarta.ws.rs.core.Response;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.keycloak.admin.client.CreatedResponseUtil;
-import org.keycloak.admin.client.Keycloak;
-import org.keycloak.admin.client.resource.RealmResource;
-import org.keycloak.admin.client.resource.UserResource;
-import org.keycloak.admin.client.resource.UsersResource;
-import org.keycloak.representations.idm.CredentialRepresentation;
-import org.keycloak.representations.idm.RoleRepresentation;
-import org.keycloak.representations.idm.UserRepresentation;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class KeycloakServiceImpl implements KeycloakService {
 
-    private final Keycloak keycloak;
+    private final RestTemplate restTemplate;
+
+    @Value("${keycloak.server-url}")
+    private String serverUrl;
 
     @Value("${keycloak.realm}")
     private String realm;
+
+    @Value("${keycloak.admin.username}")
+    private String adminUsername;
+
+    @Value("${keycloak.admin.password}")
+    private String adminPassword;
+
+    public KeycloakServiceImpl(@Qualifier("keycloakRestTemplate") RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
+
+    // ── Token ────────────────────────────────────────────────────────────────
+
+    private String getAdminToken() {
+        String cleanServer = serverUrl == null ? "" : serverUrl.strip();
+        String cleanUser   = adminUsername == null ? "" : adminUsername.strip();
+        String url = cleanServer + "/realms/master/protocol/openid-connect/token";
+        log.info("[KC-DIAG] serverUrl raw bytes: {}", serverUrl == null ? "NULL" :
+                serverUrl.chars().mapToObj(c -> String.format("%02X", c)).collect(Collectors.joining(" ")));
+        log.info("[KC-DIAG] realm    raw bytes: {}", realm == null ? "NULL" :
+                realm.chars().mapToObj(c -> String.format("%02X", c)).collect(Collectors.joining(" ")));
+        log.info("[KC-DIAG] Token URL: [{}]", url);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("client_id",     "admin-cli");
+        params.add("username",      cleanUser);
+        params.add("password",      adminPassword == null ? "" : adminPassword.strip());
+        params.add("grant_type",    "password");
+
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
+        ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
+
+        String token = (String) response.getBody().get("access_token");
+        if (token == null) {
+            throw new RuntimeException("No se obtuvo access_token de Keycloak master realm");
+        }
+        log.info("[KC-DIAG] Token obtenido OK para admin '[{}]'", cleanUser);
+        return token;
+    }
+
+    // ── Crear usuario ────────────────────────────────────────────────────────
 
     @Override
     @CircuitBreaker(name = "keycloak", fallbackMethod = "fallbackCreateUser")
     @Retry(name = "keycloak")
     public String createUser(UserRequest userRequest) {
-        UserRepresentation user = new UserRepresentation();
-        user.setUsername(userRequest.getEmail());
-        user.setEmail(userRequest.getEmail());
-        user.setFirstName(userRequest.getName());
-        user.setLastName(userRequest.getLastName());
-        user.setEnabled(true);
-        user.setEmailVerified(true);
-        user.setRequiredActions(List.of());
+        String token = getAdminToken();
+        String cleanServer = serverUrl == null ? "" : serverUrl.strip();
+        String cleanRealm  = realm == null ? "" : realm.strip();
+        String url   = cleanServer + "/admin/realms/" + cleanRealm + "/users";
+        log.info("[KC-DIAG] Create-user URL: [{}]  realm=[{}]", url, cleanRealm);
 
-        CredentialRepresentation credential = new CredentialRepresentation();
-        credential.setType(CredentialRepresentation.PASSWORD);
-        credential.setValue(userRequest.getPassword());
-        credential.setTemporary(false);
-        user.setCredentials(List.of(credential));
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
 
-        RealmResource realmResource = keycloak.realm(realm);
-        Response response = realmResource.users().create(user);
+        Map<String, Object> credential = new HashMap<>();
+        credential.put("type",      "password");
+        credential.put("value",     userRequest.getPassword());
+        credential.put("temporary", false);
 
-        int status = response.getStatus();
+        Map<String, Object> body = new HashMap<>();
+        body.put("username",       userRequest.getEmail());
+        body.put("email",          userRequest.getEmail());
+        body.put("firstName",      userRequest.getName());
+        body.put("lastName",       userRequest.getLastName());
+        body.put("enabled",        true);
+        body.put("emailVerified",  true);
+        body.put("requiredActions", List.of());
+        body.put("credentials",    List.of(credential));
 
-        String keycloakId;
-        if (status == 409) {
-            List<UserRepresentation> existing = realmResource.users().searchByEmail(userRequest.getEmail(), true);
-            if (existing == null || existing.isEmpty()) {
-                throw new RuntimeException("Usuario duplicado en Keycloak pero no encontrado por email: " + userRequest.getEmail());
+        try {
+            ResponseEntity<Void> response = restTemplate.exchange(
+                    url, HttpMethod.POST, new HttpEntity<>(body, headers), Void.class);
+
+            String location = response.getHeaders().getFirst("Location");
+            if (location == null) {
+                throw new RuntimeException("Keycloak no devolvió Location header tras crear usuario");
             }
-            keycloakId = existing.get(0).getId();
-            log.info("Usuario {} ya existía en Keycloak (id={}), reutilizando y asignando rol.", userRequest.getEmail(), keycloakId);
-        } else if (status < 200 || status >= 300) {
-            String body = response.readEntity(String.class);
-            throw new RuntimeException("Error creando usuario en Keycloak. Status: " + status + " - " + body);
-        } else {
-            keycloakId = CreatedResponseUtil.getCreatedId(response);
+            String keycloakId = location.substring(location.lastIndexOf('/') + 1);
+            log.info("Usuario {} creado en Keycloak con id={}", userRequest.getEmail(), keycloakId);
+
+            assignRoleWithToken(token, keycloakId, userRequest.getRole());
+            return keycloakId;
+
+        } catch (HttpClientErrorException e) {
+            if (e.getStatusCode().value() == 409) {
+                log.info("Usuario {} ya existía en Keycloak (409), reutilizando y actualizando contraseña.", userRequest.getEmail());
+                String keycloakId = getUserIdByEmailWithToken(token, userRequest.getEmail());
+                assignRoleWithToken(token, keycloakId, userRequest.getRole());
+                // Actualizar la contraseña para que DefaultPass1! funcione en el primer login
+                updatePasswordWithToken(token, keycloakId, userRequest.getPassword());
+                return keycloakId;
+            }
+            throw new RuntimeException("Error creando usuario en Keycloak. Status: "
+                    + e.getStatusCode().value() + " - " + e.getResponseBodyAsString());
         }
-
-        RoleRepresentation role = realmResource.roles()
-                .get(toKeycloakRoleName(userRequest.getRole()))
-                .toRepresentation();
-        realmResource.users()
-                .get(keycloakId)
-                .roles()
-                .realmLevel()
-                .add(List.of(role));
-
-        return keycloakId;
     }
+
+    // ── Buscar por email ─────────────────────────────────────────────────────
 
     @Override
     @CircuitBreaker(name = "keycloak", fallbackMethod = "fallbackGetUserIdByEmail")
     @Retry(name = "keycloak")
     public String getUserIdByEmail(String email) {
-        List<UserRepresentation> users = keycloak.realm(realm)
-                .users()
-                .searchByEmail(email, true);
-
-        if (users != null && !users.isEmpty()) {
-            return users.get(0).getId();
-        }
-
-        throw new RuntimeException("No se encontro al usuario con email: " + email);
+        String token = getAdminToken();
+        return getUserIdByEmailWithToken(token, email);
     }
+
+    @SuppressWarnings("unchecked")
+    private String getUserIdByEmailWithToken(String token, String email) {
+        String cleanServer = serverUrl == null ? "" : serverUrl.strip();
+        String cleanRealm  = realm == null ? "" : realm.strip();
+        String url = cleanServer + "/admin/realms/" + cleanRealm
+                + "/users?email=" + email + "&exact=true";
+        log.info("[KC-DIAG] GetUserByEmail URL: [{}]", url);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+
+        ResponseEntity<List> response = restTemplate.exchange(
+                url, HttpMethod.GET, new HttpEntity<>(headers), List.class);
+
+        List<Map<String, Object>> users = response.getBody();
+        if (users == null || users.isEmpty()) {
+            throw new RuntimeException("No se encontró usuario con email: " + email);
+        }
+        return (String) users.get(0).get("id");
+    }
+
+    // ── Asignar rol ──────────────────────────────────────────────────────────
 
     @Override
     @CircuitBreaker(name = "keycloak", fallbackMethod = "fallbackAssignRole")
     @Retry(name = "keycloak")
     public void assignRole(String keycloakId, String roleName) {
-        RealmResource realmResource = keycloak.realm(realm);
-        RoleRepresentation role = realmResource.roles().get(toKeycloakRoleName(roleName)).toRepresentation();
-        realmResource.users().get(keycloakId).roles().realmLevel().add(List.of(role));
+        String token = getAdminToken();
+        assignRoleWithToken(token, keycloakId, roleName);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void assignRoleWithToken(String token, String keycloakId, String roleName) {
+        String normalizedRole = toKeycloakRoleName(roleName);
+        String roleUrl = serverUrl.trim() + "/admin/realms/" + realm.trim()
+                + "/roles/" + normalizedRole;
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+
+        ResponseEntity<Map> roleResp = restTemplate.exchange(
+                roleUrl, HttpMethod.GET, new HttpEntity<>(headers), Map.class);
+        Map<String, Object> role = roleResp.getBody();
+
+        String assignUrl = serverUrl.trim() + "/admin/realms/" + realm.trim()
+                + "/users/" + keycloakId + "/role-mappings/realm";
+
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        restTemplate.exchange(assignUrl, HttpMethod.POST,
+                new HttpEntity<>(List.of(role), headers), Void.class);
+
+        log.info("Rol '{}' asignado a keycloakId={}", normalizedRole, keycloakId);
+    }
+
+    // ── Cambiar contraseña ────────────────────────────────────────────────────
+
+    private void updatePasswordWithToken(String token, String userId, String newPassword) {
+        String url = serverUrl.trim() + "/admin/realms/" + realm.trim()
+                + "/users/" + userId + "/reset-password";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        Map<String, Object> credential = new HashMap<>();
+        credential.put("type",      "password");
+        credential.put("value",     newPassword);
+        credential.put("temporary", false);
+
+        restTemplate.exchange(url, HttpMethod.PUT,
+                new HttpEntity<>(credential, headers), Void.class);
+        log.info("Contraseña actualizada para userId={}", userId);
     }
 
     @Override
     @CircuitBreaker(name = "keycloak", fallbackMethod = "fallbackUpdatePassword")
     @Retry(name = "keycloak")
     public void updatePassword(String userId, String newPassword) {
-        UserResource userResource = getUsersResource().get(userId);
-        CredentialRepresentation passwordCred = new CredentialRepresentation();
-        passwordCred.setType(CredentialRepresentation.PASSWORD);
-        passwordCred.setValue(newPassword);
-        passwordCred.setTemporary(false);
-        userResource.resetPassword(passwordCred);
+        String token = getAdminToken();
+        String url = serverUrl.trim() + "/admin/realms/" + realm.trim()
+                + "/users/" + userId + "/reset-password";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        Map<String, Object> credential = new HashMap<>();
+        credential.put("type",      "password");
+        credential.put("value",     newPassword);
+        credential.put("temporary", false);
+
+        restTemplate.exchange(url, HttpMethod.PUT,
+                new HttpEntity<>(credential, headers), Void.class);
     }
+
+    // ── Habilitar / deshabilitar ──────────────────────────────────────────────
 
     @Override
     @CircuitBreaker(name = "keycloak", fallbackMethod = "fallbackSetEnabled")
     @Retry(name = "keycloak")
     public void setEnabled(String keycloakId, boolean enabled) {
-        UserResource userResource = getUsersResource().get(keycloakId);
-        UserRepresentation rep = userResource.toRepresentation();
-        rep.setEnabled(enabled);
-        userResource.update(rep);
+        String token = getAdminToken();
+        String url = serverUrl.trim() + "/admin/realms/" + realm.trim()
+                + "/users/" + keycloakId;
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("enabled", enabled);
+
+        restTemplate.exchange(url, HttpMethod.PUT,
+                new HttpEntity<>(body, headers), Void.class);
     }
 
-    // --- Fallbacks ---
+    // ── Fallbacks ────────────────────────────────────────────────────────────
 
     @SuppressWarnings("unused")
     private String fallbackCreateUser(UserRequest userRequest, Throwable ex) {
@@ -159,27 +290,19 @@ public class KeycloakServiceImpl implements KeycloakService {
         throw new KeycloakUnavailableException("Servicio de autenticación no disponible. Intenta de nuevo en unos momentos.");
     }
 
-    // --- Helpers ---
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private String toKeycloakRoleName(String roleName) {
         return roleName != null && roleName.startsWith("ROLE_") ? roleName.substring(5) : roleName;
     }
 
-    private UsersResource getUsersResource() {
-        return keycloak.realm(realm).users();
-    }
-
-    // --- Excepciones internas ---
+    // ── Excepciones internas ──────────────────────────────────────────────────
 
     public static class UserAlreadyExistsInKeycloakException extends RuntimeException {
-        public UserAlreadyExistsInKeycloakException(String message) {
-            super(message);
-        }
+        public UserAlreadyExistsInKeycloakException(String message) { super(message); }
     }
 
     public static class KeycloakUnavailableException extends RuntimeException {
-        public KeycloakUnavailableException(String message) {
-            super(message);
-        }
+        public KeycloakUnavailableException(String message) { super(message); }
     }
 }

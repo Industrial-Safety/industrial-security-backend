@@ -1,5 +1,36 @@
+server:
+  port: 8099
+  error:
+    include-message: always
+    include-stacktrace: never
+
 spring:
   application:
     name: safety-service
   config:
-    import: optional:configserver:http://localhost:8888
+    import: aws-parameterstore:/config/application/,aws-parameterstore:/config/safety-service/
+  threads:
+    virtual:
+      enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+  cloud:
+    aws:
+      parameterstore:
+        region: us-east-1
+      stack:
+        auto: false
+
+app:
+  safety:
+    points:
+      base: 100
+      casco: 20
+      guantes: 5
+      chaleco: 10

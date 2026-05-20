@@ -1,16 +1,31 @@
+server:
+  port: 9000
+
 spring:
   application:
     name: api-gateway
   config:
-    import: "optional:configserver:http://localhost:8888"
-
+    import: aws-parameterstore:/config/application/,aws-parameterstore:/config/api-gateway/
+  cloud:
+    aws:
+      parameterstore:
+        region: us-east-1
+      stack:
+        auto: false
+    gateway:
+      default-filters:
+        - TokenRelay
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://industrial-safety.duckdns.org:8080/realms/industrial-safety
 
 management:
   endpoints:
     web:
       exposure:
         include: health,info,gateway,metrics
-
 
 logging:
   level:
