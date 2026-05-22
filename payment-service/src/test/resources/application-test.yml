@@ -1,0 +1,49 @@
+spring:
+  config:
+    import: "optional:configserver:"
+  cloud:
+    config:
+      enabled: false
+  datasource:
+    url: jdbc:postgresql://localhost:5437/payment-db
+    username: admin
+    password: admin
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9090/realms/industrial-safety
+
+aws:
+  s3:
+    bucket-name: test-bucket
+
+cloud:
+  aws:
+    credentials:
+      access-key: test-access-key
+      secret-key: test-secret-key
+    region:
+      static: us-east-1
+
+mercadopago:
+  api:
+    base-url: https://api.test.mercadopago.com
+    access-token: TEST-fake-token
+    timeout-millis: 5000
+  webhook:
+    secret: test-webhook-secret
+
+eureka:
+  client:
+    enabled: false

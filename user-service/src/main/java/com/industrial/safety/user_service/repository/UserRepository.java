@@ -9,4 +9,5 @@ public interface UserRepository extends JpaRepository<User,String>
 {
     Optional<User> findByEmail(String email);
     Optional<User> findByKeycloakId(String keycloakId);
+    Optional<User> findByDniAndRole(String dni, String role);
 }

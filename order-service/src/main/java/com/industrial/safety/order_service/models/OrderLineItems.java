@@ -4,10 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 
 @Entity
-@Table(name = "order_Items")
+@Table(name = "order_items")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -18,7 +17,12 @@ public class OrderLineItems {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String idCurso;
-    private BigDecimal price;
 
+    @Column(nullable = false)
+    private String idCurso;
+
+    private String courseName;
+
+    @Column(nullable = false, precision = 12, scale = 2)
+    private BigDecimal price;
 }

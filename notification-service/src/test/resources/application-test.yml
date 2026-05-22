@@ -1,0 +1,34 @@
+spring:
+  config:
+    import: "optional:configserver:"
+  cloud:
+    config:
+      enabled: false
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASS:guest}
+    listener:
+      simple:
+        acknowledge-mode: manual
+  mail:
+    host: ""   # vacío → EmailService omite el envío (modo seguro en tests)
+
+eureka:
+  client:
+    enabled: false
+
+notification:
+  email:
+    from: no-reply@test.com
+    from-name: Industrial Safety Tech (Test)
+  websocket:
+    endpoint: /ws
+    user-destination-prefix: /user
+    broker-prefix: /topic
+
+logging:
+  level:
+    com.industrial.safety: DEBUG
+    org.springframework.amqp: DEBUG

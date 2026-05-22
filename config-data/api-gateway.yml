@@ -33,10 +33,46 @@ spring:
         - id: course-service
           uri: lb://course-service
           predicates:
-            - Path=/api/v1/course/**
+            - Path=/api/v1/course,/api/v1/course/**
         - id: user-service
           uri: lb://user-service
           predicates:
-            - Path=/api/v1/users/**
+            - Path=/api/v1/users,/api/v1/users/**
+        - id: order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/api/v1/orders,/api/v1/orders/**
+        - id: payment-service
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/v1/payments,/api/v1/payments/**
+        - id: payment-receipts
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/v1/payments/receipts/**
+        - id: exam-service
+          uri: lb://exam-service
+          predicates:
+            - Path=/api/v1/exams,/api/v1/exams/**
+        - id: certificate-service
+          uri: lb://exam-service
+          predicates:
+            - Path=/api/v1/certificates,/api/v1/certificates/**
+        - id: chat-service
+          uri: lb://chat-service
+          predicates:
+            - Path=/api/v1/chat,/api/v1/chat/**
+        - id: purchase-service
+          uri: lb://purchase-service
+          predicates:
+            - Path=/api/v1/purchase,/api/v1/purchase/**
+        - id: notification-ws
+          uri: lb:ws://notification-service
+          predicates:
+            - Path=/ws/**
+        - id: notification-ws-sockjs
+          uri: lb://notification-service
+          predicates:
+            - Path=/ws-sockjs/**
 server:
   port: 9000

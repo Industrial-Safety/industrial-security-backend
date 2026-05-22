@@ -4,6 +4,7 @@ import com.industrial.safety.user_service.dto.UserCreationResult;
 import com.industrial.safety.user_service.dto.UserRequest;
 import com.industrial.safety.user_service.dto.UserResponse;
 import com.industrial.safety.user_service.dto.UserUpdateRequest;
+import com.industrial.safety.user_service.exception.DuplicateEmailException;
 import com.industrial.safety.user_service.exception.ResourceNotFoundException;
 import com.industrial.safety.user_service.mapper.UserMapper;
 import com.industrial.safety.user_service.model.User;
@@ -25,8 +26,17 @@ public class UserServiceImpl implements UserService {
     private final QrService qrService;
     private final KeycloakService keycloakService;
 
+    // Normaliza el email a minúsculas y sin espacios. Keycloak trata los emails
+    // como case-insensitive; si la BD guarda variantes de capitalización se generan
+    // registros duplicados y el keycloakId queda vacío. Normalizar en el punto de
+    // entrada lo previene de raíz.
+    private String normalizeEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase();
+    }
+
     @Override
     public UserCreationResult createUser(UserRequest userRequest) {
+        userRequest.setEmail(normalizeEmail(userRequest.getEmail()));
         var userExistente = userRepository.findByEmail(userRequest.getEmail());
         if (userExistente.isPresent()) {
             User existing = userExistente.get();
@@ -44,7 +54,11 @@ public class UserServiceImpl implements UserService {
         }
 
         String keycloakId;
-        boolean createdByAdmin = !userRequest.getPassword().equals("oauth_user_password");
+        // If the caller explicitly sets mustChangePassword (e.g. registerStudent sets it to false),
+        // use that value; otherwise fall back to detecting admin creation from the password.
+        boolean createdByAdmin = userRequest.getMustChangePassword() != null
+                ? userRequest.getMustChangePassword()
+                : !userRequest.getPassword().equals("oauth_user_password");
 
         // Si el frontend ya provee keycloakId, el usuario existe en Keycloak — usar directo, sin llamar Admin API
         if (userRequest.getKeycloakId() != null && !userRequest.getKeycloakId().isBlank()) {
@@ -94,8 +108,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponse getUserByEmail(String email) {
-        User user = userRepository.findByEmail(email).orElseThrow(
-                () -> new ResourceNotFoundException("No existe el email ", "email", email)
+        String normalized = normalizeEmail(email);
+        User user = userRepository.findByEmail(normalized).orElseThrow(
+                () -> new ResourceNotFoundException("No existe el email ", "email", normalized)
         );
         return userMapper.toUserResponse(user);
     }
@@ -121,6 +136,37 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public UserResponse createUserAdmin(UserRequest userRequest) {
+        userRequest.setEmail(normalizeEmail(userRequest.getEmail()));
+        if (userRepository.findByEmail(userRequest.getEmail()).isPresent()) {
+            throw new DuplicateEmailException(userRequest.getEmail());
+        }
+        return createUser(userRequest).user();
+    }
+
+    @Override
+    public UserResponse toggleStatus(String id) {
+        User user = userRepository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException("No existe el id", "id", id)
+        );
+        boolean newStatus = !Boolean.TRUE.equals(user.getIsActive());
+        user.setIsActive(newStatus);
+        userRepository.save(user);
+        if (user.getKeycloakId() != null && !user.getKeycloakId().isBlank()) {
+            keycloakService.setEnabled(user.getKeycloakId(), newStatus);
+        }
+        return userMapper.toUserResponse(user);
+    }
+
+    @Override
+    public UserResponse getUserByDni(String dni) {
+        User user = userRepository.findByDniAndRole(dni, "ROLE_TRABAJADOR").orElseThrow(
+                () -> new ResourceNotFoundException("Trabajador no encontrado con DNI", "dni", dni)
+        );
+        return userMapper.toUserResponse(user);
+    }
+
+    @Override
     public void changePassword(String keycloakId, String email, String newPassword) {
         keycloakService.updatePassword(keycloakId, newPassword);
         // Busca por keycloakId; si no encuentra (ID desincronizado en DB), cae a email
@@ -128,7 +174,7 @@ public class UserServiceImpl implements UserService {
                 .map(user -> { user.setMustChangePassword(false); userRepository.save(user); return true; })
                 .orElse(false);
         if (!updated && email != null && !email.isBlank()) {
-            userRepository.findByEmail(email).ifPresent(user -> {
+            userRepository.findByEmail(normalizeEmail(email)).ifPresent(user -> {
                 user.setMustChangePassword(false);
                 userRepository.save(user);
             });

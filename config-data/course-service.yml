@@ -7,6 +7,14 @@ spring:
   data:
     mongodb:
       uri: mongodb://root:password@localhost:27019/course-db?authSource=admin
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 4
   security:
     oauth2:
       resourceserver:
@@ -38,3 +46,36 @@ aws:
   s3:
     bucket-name: ${AWS_BUCKET_NAME}
   region: ${AWS_REGION}
+
+app:
+  management:
+    email: ${MANAGEMENT_EMAIL:gerencia@industrialsafety.com}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      aws-s3:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 15s
+        permitted-number-of-calls-in-half-open-state: 3
+        register-health-indicator: true
+  retry:
+    instances:
+      aws-s3:
+        max-attempts: 3
+        wait-duration: 500ms
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - software.amazon.awssdk.core.exception.SdkClientException
+          - java.net.ConnectException
+          - java.io.IOException
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,circuitbreakers,retries
+  endpoint:
+    health:
+      show-details: when_authorized

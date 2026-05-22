@@ -6,6 +6,7 @@ import com.industrial.safety.course_service.exception.ResourceNotFoundException;
 import com.industrial.safety.course_service.mapper.CourseMapper;
 import com.industrial.safety.course_service.model.Course;
 import com.industrial.safety.course_service.repository.CourseRepository;
+import com.industrial.safety.course_service.service.AssetCacheService;
 import com.industrial.safety.course_service.service.CourseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ public class CourseServiceImpl implements CourseService
 {
     private final CourseRepository courseRepository;
     private final CourseMapper courseMapper;
+    private final AssetCacheService assetCacheService;
 
     @Override
     @Transactional
@@ -33,6 +35,7 @@ public class CourseServiceImpl implements CourseService
                 .flatMap(lecture -> lecture.getResourceList().stream())
                 .forEach(resource -> resource.setId(UUID.randomUUID().toString()));
         Course newCourse = courseRepository.save(course);
+        assetCacheService.cacheCourse(newCourse);
         return courseMapper.toCourseResponse(newCourse);
     }
 
@@ -82,8 +85,19 @@ public class CourseServiceImpl implements CourseService
                 });
             });
         });
+        assetCacheService.evictCourse(id);
         Course courseUpdate = courseRepository.save(course);
+        assetCacheService.cacheCourse(courseUpdate);
         return courseMapper.toCourseResponse(courseUpdate);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CourseResponse> getCoursesByIds(List<String> ids) {
+        return courseRepository.findAllById(ids)
+                .stream()
+                .map(courseMapper::toCourseResponse)
+                .toList();
     }
 
     @Override
@@ -91,6 +105,7 @@ public class CourseServiceImpl implements CourseService
     public void deleteCourse(String id) {
         if (!courseRepository.existsById(id))
             throw new ResourceNotFoundException("Course no encontrado", "id", id);
+        assetCacheService.evictCourse(id);
         courseRepository.deleteById(id);
     }
 }

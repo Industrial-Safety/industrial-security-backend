@@ -56,6 +56,33 @@ public class GlobalControllerAdvice {
     }
 
 
+    @ExceptionHandler(InvalidCouponException.class)
+    public ProblemDetail handleInvalidCoupon(InvalidCouponException ex) {
+        log.warn("Invalid coupon: {}", ex.getMessage());
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+        pd.setTitle("Cupón inválido");
+        pd.setProperty("Timestap", Instant.now());
+        return pd;
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ProblemDetail handleIllegalArgument(IllegalArgumentException ex) {
+        log.warn("Bad request: {}", ex.getMessage());
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problemDetail.setTitle("Invalid request");
+        problemDetail.setProperty("Timestap", Instant.now());
+        return problemDetail;
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ProblemDetail handleIllegalState(IllegalStateException ex) {
+        log.warn("Conflict: {}", ex.getMessage());
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problemDetail.setTitle("Invalid order state");
+        problemDetail.setProperty("Timestap", Instant.now());
+        return problemDetail;
+    }
+
     @ExceptionHandler(Exception.class)
     public ProblemDetail handelException(Exception ex, WebRequest request){
 

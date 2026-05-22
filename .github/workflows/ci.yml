@@ -1,0 +1,130 @@
+name: CI — Industrial Safety Backend
+
+on:
+  push:
+    branches: [ main, develop, "pruebas" ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  JAVA_VERSION: "25"
+  MAVEN_OPTS: "-Xmx2048m"
+
+jobs:
+  # ============================================================
+  #  JOB 1 — PRUEBAS UNITARIAS (rápidas, sin Docker)
+  # ============================================================
+  unit-tests:
+    name: "Pruebas Unitarias"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - course-service
+          - notification-service
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Ejecutar pruebas unitarias — ${{ matrix.service }}
+        working-directory: ${{ matrix.service }}
+        run: |
+          mvn test \
+            -Dspring.profiles.active=test \
+            -Dgroups="!integration" \
+            -Dsurefire.failIfNoSpecifiedTests=false \
+            --no-transfer-progress
+
+      - name: Generar reporte JaCoCo — ${{ matrix.service }}
+        working-directory: ${{ matrix.service }}
+        run: mvn jacoco:report --no-transfer-progress
+
+      - name: Subir reporte de cobertura
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-${{ matrix.service }}
+          path: ${{ matrix.service }}/target/site/jacoco/
+
+      - name: Publicar resultados JUnit XML
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: "Unit Tests — ${{ matrix.service }}"
+          path: "${{ matrix.service }}/target/surefire-reports/*.xml"
+          reporter: java-junit
+
+  # ============================================================
+  #  JOB 2 — PRUEBAS DE INTEGRACIÓN (requiere Docker/Testcontainers)
+  # ============================================================
+  integration-tests:
+    name: "Pruebas de Integración"
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - course-service
+          - notification-service
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Ejecutar pruebas de integración — ${{ matrix.service }}
+        working-directory: ${{ matrix.service }}
+        run: |
+          mvn failsafe:integration-test failsafe:verify \
+            -Dspring.profiles.active=test \
+            -Dgroups="integration" \
+            --no-transfer-progress
+
+      - name: Publicar resultados Failsafe XML
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: "Integration Tests — ${{ matrix.service }}"
+          path: "${{ matrix.service }}/target/failsafe-reports/*.xml"
+          reporter: java-junit
+
+  # ============================================================
+  #  JOB 3 — VERIFICACIÓN DE COBERTURA GLOBAL (JaCoCo Check)
+  # ============================================================
+  coverage-check:
+    name: "Verificar Cobertura ≥ 80%"
+    needs: [ unit-tests, integration-tests ]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - course-service
+          - notification-service
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Verificar umbral de cobertura — ${{ matrix.service }}
+        working-directory: ${{ matrix.service }}
+        run: |
+          mvn verify \
+            -Dspring.profiles.active=test \
+            --no-transfer-progress

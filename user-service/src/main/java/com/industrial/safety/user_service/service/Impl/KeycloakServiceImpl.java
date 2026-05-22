@@ -2,8 +2,11 @@ package com.industrial.safety.user_service.service.Impl;
 
 import com.industrial.safety.user_service.dto.UserRequest;
 import com.industrial.safety.user_service.service.KeycloakService;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.keycloak.admin.client.CreatedResponseUtil;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.RealmResource;
@@ -17,15 +20,19 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class KeycloakServiceImpl implements KeycloakService {
+
     private final Keycloak keycloak;
 
     @Value("${keycloak.realm}")
     private String realm;
 
     @Override
+    @CircuitBreaker(name = "keycloak", fallbackMethod = "fallbackCreateUser")
+    @Retry(name = "keycloak")
     public String createUser(UserRequest userRequest) {
         UserRepresentation user = new UserRepresentation();
         user.setUsername(userRequest.getEmail());
@@ -47,16 +54,20 @@ public class KeycloakServiceImpl implements KeycloakService {
 
         int status = response.getStatus();
 
+        String keycloakId;
         if (status == 409) {
-            throw new UserAlreadyExistsInKeycloakException("Usuario ya existe en Keycloak: " + userRequest.getEmail());
-        }
-
-        if (status < 200 || status >= 300) {
+            List<UserRepresentation> existing = realmResource.users().searchByEmail(userRequest.getEmail(), true);
+            if (existing == null || existing.isEmpty()) {
+                throw new RuntimeException("Usuario duplicado en Keycloak pero no encontrado por email: " + userRequest.getEmail());
+            }
+            keycloakId = existing.get(0).getId();
+            log.info("Usuario {} ya existía en Keycloak (id={}), reutilizando y asignando rol.", userRequest.getEmail(), keycloakId);
+        } else if (status < 200 || status >= 300) {
             String body = response.readEntity(String.class);
             throw new RuntimeException("Error creando usuario en Keycloak. Status: " + status + " - " + body);
+        } else {
+            keycloakId = CreatedResponseUtil.getCreatedId(response);
         }
-
-        String keycloakId = CreatedResponseUtil.getCreatedId(response);
 
         RoleRepresentation role = realmResource.roles()
                 .get(toKeycloakRoleName(userRequest.getRole()))
@@ -71,6 +82,8 @@ public class KeycloakServiceImpl implements KeycloakService {
     }
 
     @Override
+    @CircuitBreaker(name = "keycloak", fallbackMethod = "fallbackGetUserIdByEmail")
+    @Retry(name = "keycloak")
     public String getUserIdByEmail(String email) {
         List<UserRepresentation> users = keycloak.realm(realm)
                 .users()
@@ -84,6 +97,8 @@ public class KeycloakServiceImpl implements KeycloakService {
     }
 
     @Override
+    @CircuitBreaker(name = "keycloak", fallbackMethod = "fallbackAssignRole")
+    @Retry(name = "keycloak")
     public void assignRole(String keycloakId, String roleName) {
         RealmResource realmResource = keycloak.realm(realm);
         RoleRepresentation role = realmResource.roles().get(toKeycloakRoleName(roleName)).toRepresentation();
@@ -91,6 +106,8 @@ public class KeycloakServiceImpl implements KeycloakService {
     }
 
     @Override
+    @CircuitBreaker(name = "keycloak", fallbackMethod = "fallbackUpdatePassword")
+    @Retry(name = "keycloak")
     public void updatePassword(String userId, String newPassword) {
         UserResource userResource = getUsersResource().get(userId);
         CredentialRepresentation passwordCred = new CredentialRepresentation();
@@ -98,8 +115,51 @@ public class KeycloakServiceImpl implements KeycloakService {
         passwordCred.setValue(newPassword);
         passwordCred.setTemporary(false);
         userResource.resetPassword(passwordCred);
-        System.out.println("Contrasena actualizada exitosamente para el usuario: " + userId);
     }
+
+    @Override
+    @CircuitBreaker(name = "keycloak", fallbackMethod = "fallbackSetEnabled")
+    @Retry(name = "keycloak")
+    public void setEnabled(String keycloakId, boolean enabled) {
+        UserResource userResource = getUsersResource().get(keycloakId);
+        UserRepresentation rep = userResource.toRepresentation();
+        rep.setEnabled(enabled);
+        userResource.update(rep);
+    }
+
+    // --- Fallbacks ---
+
+    @SuppressWarnings("unused")
+    private String fallbackCreateUser(UserRequest userRequest, Throwable ex) {
+        log.error("Keycloak no disponible — no se pudo crear usuario {}: {}", userRequest.getEmail(), ex.getMessage());
+        throw new KeycloakUnavailableException("Servicio de autenticación no disponible. Intenta de nuevo en unos momentos.");
+    }
+
+    @SuppressWarnings("unused")
+    private String fallbackGetUserIdByEmail(String email, Throwable ex) {
+        log.error("Keycloak circuit open — no se pudo buscar usuario {}: {}", email, ex.getMessage());
+        throw new KeycloakUnavailableException("Servicio de autenticación no disponible. Intenta de nuevo en unos momentos.");
+    }
+
+    @SuppressWarnings("unused")
+    private void fallbackAssignRole(String keycloakId, String roleName, Throwable ex) {
+        log.error("Keycloak circuit open — no se pudo asignar rol {} a {}: {}", roleName, keycloakId, ex.getMessage());
+        throw new KeycloakUnavailableException("Servicio de autenticación no disponible. Intenta de nuevo en unos momentos.");
+    }
+
+    @SuppressWarnings("unused")
+    private void fallbackUpdatePassword(String userId, String newPassword, Throwable ex) {
+        log.error("Keycloak circuit open — no se pudo actualizar contraseña para {}: {}", userId, ex.getMessage());
+        throw new KeycloakUnavailableException("Servicio de autenticación no disponible. Intenta de nuevo en unos momentos.");
+    }
+
+    @SuppressWarnings("unused")
+    private void fallbackSetEnabled(String keycloakId, boolean enabled, Throwable ex) {
+        log.error("Keycloak circuit open — no se pudo cambiar estado de cuenta {}: {}", keycloakId, ex.getMessage());
+        throw new KeycloakUnavailableException("Servicio de autenticación no disponible. Intenta de nuevo en unos momentos.");
+    }
+
+    // --- Helpers ---
 
     private String toKeycloakRoleName(String roleName) {
         return roleName != null && roleName.startsWith("ROLE_") ? roleName.substring(5) : roleName;
@@ -109,8 +169,16 @@ public class KeycloakServiceImpl implements KeycloakService {
         return keycloak.realm(realm).users();
     }
 
+    // --- Excepciones internas ---
+
     public static class UserAlreadyExistsInKeycloakException extends RuntimeException {
         public UserAlreadyExistsInKeycloakException(String message) {
+            super(message);
+        }
+    }
+
+    public static class KeycloakUnavailableException extends RuntimeException {
+        public KeycloakUnavailableException(String message) {
             super(message);
         }
     }

@@ -26,6 +26,7 @@ public class UserController
     @PostMapping("/register")
     public ResponseEntity<UserResponse> registerStudent(@Valid @RequestBody UserRequest userRequest) {
         userRequest.setRole("ROLE_ALUMNO");
+        userRequest.setMustChangePassword(false); // self-registration never requires a forced password change
         UserCreationResult result = userService.createUser(userRequest);
         HttpStatus status = result.isNew() ? HttpStatus.CREATED : HttpStatus.OK;
         return ResponseEntity.status(status).body(result.user());
@@ -34,13 +35,30 @@ public class UserController
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public UserResponse createUser(@Valid @RequestBody UserRequest userRequest) {
-        return userService.createUser(userRequest).user();
+        return userService.createUserAdmin(userRequest);
+    }
+
+    @PatchMapping("/{id}/toggle-status")
+    public ResponseEntity<UserResponse> toggleStatus(@PathVariable String id) {
+        return ResponseEntity.ok(userService.toggleStatus(id));
     }
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public List<UserResponse> getAllUsers() {
-        return userService.toListUser();
+    public List<UserResponse> getAllUsers(@RequestParam(required = false) String role) {
+        List<UserResponse> users = userService.toListUser();
+        if (role == null || role.isBlank()) {
+            return users;
+        }
+        String wanted = normalizeRole(role);
+        return users.stream()
+                .filter(u -> u.getRole() != null && normalizeRole(u.getRole()).equals(wanted))
+                .toList();
+    }
+
+    private String normalizeRole(String role) {
+        String r = role.trim().toUpperCase();
+        return r.startsWith("ROLE_") ? r.substring(5) : r;
     }
 
     @GetMapping("/{id}")
@@ -53,6 +71,12 @@ public class UserController
     @ResponseStatus(HttpStatus.OK)
     public UserResponse getUserByEmail(@RequestParam String email) {
         return userService.getUserByEmail(email);
+    }
+
+    @GetMapping("/by-dni")
+    @ResponseStatus(HttpStatus.OK)
+    public UserResponse getUserByDni(@RequestParam String dni) {
+        return userService.getUserByDni(dni);
     }
 
     @PutMapping("/{id}")

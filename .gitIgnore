@@ -16,3 +16,16 @@ target/
 build/
 out/
 bin/
+
+# Secretos locales (NO commitear)
+**/application-local.yaml
+**/application-local.yml
+.env
+.env.local
+receipts/
+
+# Claude Code
+.claude/
+
+# Keycloak backups (contienen secretos)
+keycloak-backup/

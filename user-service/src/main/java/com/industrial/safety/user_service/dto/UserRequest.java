@@ -30,4 +30,6 @@ public class UserRequest
     private String password;
 
     private String keycloakId;
+
+    private Boolean mustChangePassword;
 }

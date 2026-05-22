@@ -1,0 +1,130 @@
+server:
+  port: 8083
+  error:
+    include-message: always
+    include-stacktrace: never
+
+spring:
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: jdbc:postgresql://localhost:5437/payment-db
+    username: admin
+    password: admin
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 25
+        order_inserts: true
+        order_updates: true
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 10
+        retry:
+          enabled: true
+          initial-interval: 1s
+          multiplier: 2
+          max-attempts: 3
+          max-interval: 10s
+    publisher-confirm-type: correlated
+    publisher-returns: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9090/realms/industrial-safety
+
+mercadopago:
+  api:
+    base-url: ${MP_BASE_URL:https://api.mercadopago.com}
+    # Access token de TEST. Override con env var MP_ACCESS_TOKEN cuando despliegues a otro entorno.
+    access-token: ${MP_ACCESS_TOKEN:TEST-3272864297327696-050911-3909d5bdb3801656d924e69534cd56a0-645123561}
+    timeout-millis: 8000
+  webhook:
+    # Opcional: secreto del webhook desde MP > Webhooks > tu URL > Secret. Si está vacío, no se valida firma.
+    secret: ${MP_WEBHOOK_SECRET:}
+
+cloud:
+  aws:
+    region:
+      static: ${AWS_REGION}
+    credentials:
+      access-key: ${AWS_ACCESS_KEY_ID}
+      secret-key: ${AWS_SECRET_ACCESS_KEY}
+    s3:
+      bucket-name: ${AWS_BUCKET_NAME}
+    stack:
+      auto: false
+
+aws:
+  s3:
+    bucket-name: ${AWS_BUCKET_NAME}
+  region: ${AWS_REGION}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      mercadopago:
+        sliding-window-size: 20
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 5
+        register-health-indicator: true
+      aws-s3:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 15s
+        permitted-number-of-calls-in-half-open-state: 3
+        register-health-indicator: true
+  retry:
+    instances:
+      mercadopago:
+        max-attempts: 3
+        wait-duration: 500ms
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - org.springframework.web.reactive.function.client.WebClientRequestException
+          - java.io.IOException
+      aws-s3:
+        max-attempts: 3
+        wait-duration: 500ms
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - software.amazon.awssdk.core.exception.SdkClientException
+          - java.net.ConnectException
+          - java.io.IOException
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    fetch-registry: true
+    register-with-eureka: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,circuitbreakers,retries
+  endpoint:
+    health:
+      show-details: when_authorized
+
+logging:
+  level:
+    com.industrial.safety: INFO
+    org.springframework.amqp: WARN

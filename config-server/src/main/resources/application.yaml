@@ -6,7 +6,7 @@ spring:
       server:
         git:
           uri: https://github.com/Industrial-Safety/industrial-security-backend.git
-          default-label: richar
+          default-label: pruebas
           clone-on-start: true
           search-paths: config-data
 

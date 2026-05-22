@@ -17,6 +17,34 @@ public class GatewayConfig {
                 .route("user-service", c->c
                         .path("/api/v1/users/**")
                         .uri("lb://USER-SERVICE"))
+                .route("order-service", c->c
+                        .path("/api/v1/orders","/api/v1/orders/**")
+                        .uri("lb://ORDER-SERVICE"))
+                .route("payment-receipts", c->c
+                        .path("/api/v1/payments/receipts/**")
+                        .uri("lb://PAYMENT-SERVICE"))
+                .route("payment-service", c->c
+                        .path("/api/v1/payments","/api/v1/payments/**")
+                        .uri("lb://PAYMENT-SERVICE"))
+                .route("chat-service", c->c
+                        .path("/api/v1/chat/**")
+                        .uri("lb://CHAT-SERVICE"))
+                .route("exam-service", c->c
+                        .path("/api/v1/exams", "/api/v1/exams/**")
+                        .uri("lb://EXAM-SERVICE"))
+                .route("certificate-service", c->c
+                        .path("/api/v1/certificates", "/api/v1/certificates/**")
+                        .uri("lb://EXAM-SERVICE"))
+                .route("purchase-service", c->c
+                        .path("/api/v1/purchase", "/api/v1/purchase/**")
+                        .uri("lb://PURCHASE-SERVICE"))
+                .route("notification-ws", c->c
+                        .path("/ws/**")
+                        .uri("lb:ws://NOTIFICATION-SERVICE"))
+                .route("safety-service", c->c
+                        .path("/api/v1/incidents", "/api/v1/incidents/**",
+                                "/api/v1/safety-score", "/api/v1/safety-score/**")
+                        .uri("lb://SAFETY-SERVICE"))
                 .build();
     }
 }
