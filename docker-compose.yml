@@ -11,7 +11,6 @@ services:
     volumes:
       - mongo_course_data:/data/db
 
-
   mongodb-chat:
     image: mongo:7.0.4
     container_name: mongodb-chat
@@ -22,7 +21,6 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=password
     volumes:
       - mongo_chat_data:/data/db
-
 
   keycloak-db:
     image: postgres:16-alpine
@@ -36,7 +34,6 @@ services:
     volumes:
       - keycloak_data:/var/lib/postgresql/data
 
-
   user-db:
     image: postgres:16-alpine
     container_name: user-db
@@ -48,7 +45,6 @@ services:
       POSTGRES_DB: user-db
     volumes:
       - user_data:/var/lib/postgresql/data
-
 
   order-db:
     image: postgres:16-alpine
@@ -62,7 +58,6 @@ services:
     volumes:
       - order_data:/var/lib/postgresql/data
 
-
   payment-db:
     image: postgres:16-alpine
     container_name: payment-db
@@ -74,7 +69,6 @@ services:
       POSTGRES_DB: payment-db
     volumes:
       - payment_data:/var/lib/postgresql/data
-
 
   exam-db:
     image: postgres:16-alpine
@@ -88,7 +82,6 @@ services:
     volumes:
       - exam_data:/var/lib/postgresql/data
 
-
   rabbitmq:
     image: rabbitmq:3.13-management
     container_name: rabbitmq
@@ -101,7 +94,6 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
 
-
   redis:
     image: redis:7-alpine
     container_name: redis
@@ -110,7 +102,6 @@ services:
     command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
-
 
   keycloak:
     image: quay.io/keycloak/keycloak:24.0.1
@@ -128,77 +119,53 @@ services:
     depends_on:
       - keycloak-db
 
-  # ══════════════════════════════════════════════════════
-  # EPP — Replicación Master-Slave
-  # ══════════════════════════════════════════════════════
-
-  # ── EPP Master — recibe escrituras ────────────────────
+  # ── EPP Master ─────────────────────────────────────────
   epp-master:
     image: postgres:16-alpine
     container_name: epp-master
+    user: postgres
     ports:
       - "5439:5432"
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: root
       POSTGRES_DB: safety_db
     volumes:
       - epp_master_data:/var/lib/postgresql/data
-      - ./init/pg_hba.conf:/etc/postgresql/pg_hba.conf
-      - ./init/master.conf:/etc/postgresql/postgresql.conf
-      - ./init/init-master.sql:/docker-entrypoint-initdb.d/init.sql
-    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+      - ./init/01-init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./init/02-hba.sh:/docker-entrypoint-initdb.d/02-hba.sh
+    command: >
+      postgres
+      -c wal_level=replica
+      -c max_wal_senders=2
+      -c wal_keep_size=64MB
+      -c listen_addresses=*
     networks:
       - epp-network
 
-  # ── EPP Slave 1 — Dashboard jefe de seguridad ─────────
-  epp-slave1:
+  # ── EPP Slave ──────────────────────────────────────────
+  epp-slave:
     image: postgres:16-alpine
-    container_name: epp-slave1
+    container_name: epp-slave
+    user: postgres
     ports:
       - "5440:5432"
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: root
       PGUSER: postgres
+      PGPASSWORD: replicator123
     volumes:
-      - epp_slave1_data:/var/lib/postgresql/data
-      - ./init/slave.conf:/etc/postgresql/postgresql.conf
+      - epp_slave_data:/var/lib/postgresql/data
     command: >
       bash -c "
-      until pg_basebackup -h epp-master -U replicator -D /var/lib/postgresql/data -Fp -Xs -P -R;
+      chmod 700 /var/lib/postgresql/data &&
+      until pg_basebackup -h epp-master -U replicator -w -D /var/lib/postgresql/data -Fp -Xs -P -R;
       do
         echo 'Esperando master...'
-        sleep 2
+        sleep 3
       done &&
-      postgres -c config_file=/etc/postgresql/postgresql.conf
-      "
-    depends_on:
-      - epp-master
-    networks:
-      - epp-network
-
-  # ── EPP Slave 2 — Reportes gerencia ───────────────────
-  epp-slave2:
-    image: postgres:16-alpine
-    container_name: epp-slave2
-    ports:
-      - "5441:5432"
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      PGUSER: postgres
-    volumes:
-      - epp_slave2_data:/var/lib/postgresql/data
-      - ./init/slave.conf:/etc/postgresql/postgresql.conf
-    command: >
-      bash -c "
-      until pg_basebackup -h epp-master -U replicator -D /var/lib/postgresql/data -Fp -Xs -P -R;
-      do
-        echo 'Esperando master...'
-        sleep 2
-      done &&
-      postgres -c config_file=/etc/postgresql/postgresql.conf
+      postgres -c hot_standby=on -c listen_addresses=*
       "
     depends_on:
       - epp-master
@@ -216,8 +183,7 @@ volumes:
   rabbitmq_data:
   redis_data:
   epp_master_data:
-  epp_slave1_data:
-  epp_slave2_data:
+  epp_slave_data:
 
 networks:
   epp-network:
