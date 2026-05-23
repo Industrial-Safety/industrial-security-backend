@@ -1,6 +1,5 @@
 package com.industrial.safety.exam_service.integration.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.industrial.safety.exam_service.model.Exam;
 import com.industrial.safety.exam_service.model.Question;
 import com.industrial.safety.exam_service.parser.ExamXlsxParser;
@@ -46,7 +45,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ExamControllerIT {
 
     @Autowired MockMvc       mockMvc;
-    @Autowired ObjectMapper  objectMapper;
     @Autowired ExamRepository examRepository;
 
     @MockitoBean ExamXlsxParser         xlsxParser;

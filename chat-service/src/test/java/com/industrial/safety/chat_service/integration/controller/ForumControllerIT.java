@@ -1,6 +1,5 @@
 package com.industrial.safety.chat_service.integration.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.industrial.safety.chat_service.domain.ForumPost;
 import com.industrial.safety.chat_service.repository.ForumPostRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -37,7 +36,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ForumControllerIT {
 
     @Autowired MockMvc            mockMvc;
-    @Autowired ObjectMapper       objectMapper;
     @Autowired ForumPostRepository forumPostRepository;
 
     private static final String BASE_URL = "/api/v1/chat/forum";

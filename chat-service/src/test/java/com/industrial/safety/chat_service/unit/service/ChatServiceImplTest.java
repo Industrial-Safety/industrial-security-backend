@@ -30,7 +30,7 @@ import static org.mockito.BDDMockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ChatServiceImpl — Pruebas Unitarias")
-class ChatServiceImplTest {
+class DChatServiceImplTest {
 
     @Mock ConversationRepository conversationRepository;
     @Mock MessageRepository      messageRepository;

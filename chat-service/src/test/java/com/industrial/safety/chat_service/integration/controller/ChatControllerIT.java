@@ -1,6 +1,5 @@
 package com.industrial.safety.chat_service.integration.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.industrial.safety.chat_service.domain.Conversation;
 import com.industrial.safety.chat_service.domain.ConversationType;
 import com.industrial.safety.chat_service.domain.Message;
@@ -39,7 +38,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ChatControllerIT {
 
     @Autowired MockMvc               mockMvc;
-    @Autowired ObjectMapper          objectMapper;
     @Autowired ConversationRepository conversationRepository;
     @Autowired MessageRepository     messageRepository;
 

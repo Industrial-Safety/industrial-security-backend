@@ -1,6 +1,5 @@
 package com.industrial.safety.safety_service.integration.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.industrial.safety.safety_service.messaging.SafetyAlertPublisher;
 import com.industrial.safety.safety_service.model.Incident;
 import com.industrial.safety.safety_service.model.WorkerComplianceScore;
@@ -42,7 +41,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class IncidentControllerIT {
 
     @Autowired MockMvc                         mockMvc;
-    @Autowired ObjectMapper                    objectMapper;
     @Autowired IncidentRepository              incidentRepository;
     @Autowired WorkerComplianceScoreRepository scoreRepository;
 

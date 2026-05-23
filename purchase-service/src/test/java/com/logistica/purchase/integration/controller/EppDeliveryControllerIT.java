@@ -1,6 +1,5 @@
 package com.logistica.purchase.integration.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.logistica.purchase.entity.EppDelivery;
 import com.logistica.purchase.entity.PurchaseRequest;
 import com.logistica.purchase.messaging.EppEventPublisher;
@@ -43,7 +42,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class EppDeliveryControllerIT {
 
     @Autowired MockMvc                   mockMvc;
-    @Autowired ObjectMapper              objectMapper;
     @Autowired PurchaseRequestRepository purchaseRepo;
     @Autowired EppDeliveryRepository     deliveryRepo;
 
