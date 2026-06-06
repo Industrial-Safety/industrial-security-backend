@@ -11,6 +11,10 @@ spring:
 
 keycloak:
   realm: industrial-safety
+  server-url: http://localhost:8089
+  admin:
+    username: test-admin
+    password: test-password
 
 aws:
   s3:

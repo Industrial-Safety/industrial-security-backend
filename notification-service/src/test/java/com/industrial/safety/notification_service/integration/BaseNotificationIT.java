@@ -5,12 +5,14 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.containers.RabbitMQContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * Base para los ITs del notification-service.
- * Levanta RabbitMQ una sola vez para toda la suite.
+ *
+ * Patrón singleton de Testcontainers: RabbitMQ se arranca UNA sola vez por JVM
+ * (bloque static) y NUNCA se apaga, de modo que el contexto cacheado de Spring
+ * siempre apunta a un contenedor vivo.
+ *
  * No hay base de datos: este servicio es stateless (solo mensajería + email + WebSocket).
  */
 @SpringBootTest(
@@ -24,10 +26,12 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 )
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Testcontainers
 public abstract class BaseNotificationIT {
 
-    @Container
     @ServiceConnection
     static final RabbitMQContainer rabbit = new RabbitMQContainer("rabbitmq:3-management");
+
+    static {
+        rabbit.start();
+    }
 }

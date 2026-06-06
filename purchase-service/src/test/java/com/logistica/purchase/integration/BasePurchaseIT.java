@@ -6,12 +6,13 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.RabbitMQContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * Base para todos los ITs del purchase-service que usan @SpringBootTest.
- * Levanta PostgreSQL y RabbitMQ una sola vez para toda la suite (contenedores estáticos).
+ *
+ * Patrón singleton de Testcontainers: PostgreSQL y RabbitMQ se arrancan UNA sola
+ * vez por JVM (bloque static) y NUNCA se apagan, de modo que el contexto cacheado
+ * de Spring siempre apunta a contenedores vivos.
  */
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.MOCK,
@@ -23,14 +24,16 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 )
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Testcontainers
 public abstract class BasePurchaseIT {
 
-    @Container
     @ServiceConnection
     static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16");
 
-    @Container
     @ServiceConnection
     static final RabbitMQContainer rabbit = new RabbitMQContainer("rabbitmq:3-management");
+
+    static {
+        postgres.start();
+        rabbit.start();
+    }
 }

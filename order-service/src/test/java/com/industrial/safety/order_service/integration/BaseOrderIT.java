@@ -5,13 +5,17 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.containers.RabbitMQContainer;
 
 /**
  * Base para los ITs del order-service que usan @SpringBootTest.
- * Levanta PostgreSQL una sola vez para toda la suite.
- * OrderEventPublisher está mockeado en cada IT; AMQP usa conexión lazy.
+ *
+ * Patrón singleton de Testcontainers: PostgreSQL y RabbitMQ se arrancan UNA sola
+ * vez por JVM (bloque static) y NUNCA se apagan, de modo que el contexto cacheado
+ * de Spring siempre apunta a contenedores vivos.
+ *
+ * RabbitMQ es necesario porque el servicio registra un @RabbitListener que abre
+ * la conexión al arrancar el contexto (no es lazy).
  */
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.MOCK,
@@ -23,10 +27,16 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 )
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Testcontainers
 public abstract class BaseOrderIT {
 
-    @Container
     @ServiceConnection
     static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16");
+
+    @ServiceConnection
+    static final RabbitMQContainer rabbit = new RabbitMQContainer("rabbitmq:3-management");
+
+    static {
+        postgres.start();
+        rabbit.start();
+    }
 }
