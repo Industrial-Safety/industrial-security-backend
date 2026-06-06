@@ -1,0 +1,24 @@
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          api-gateway-client:
+            provider: keycloak
+            client-id: dummy-client
+            client-secret: dummy-secret
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope: openid, profile, email
+        provider:
+          keycloak:
+            issuer-uri: http://localhost:9090/realms/industrial-safety
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9090/realms/industrial-safety
+
+eureka:
+  client:
+    enabled: false
+
+spring.cloud.config.enabled: false
