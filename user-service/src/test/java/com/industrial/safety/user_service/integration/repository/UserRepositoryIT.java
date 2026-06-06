@@ -10,7 +10,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.ActiveProfiles;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -21,8 +25,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
 @Tag("integration")
+@Testcontainers
 @DisplayName("UserRepository — Pruebas de Integración con PostgreSQL")
 class UserRepositoryIT {
+
+    @Container
+    @ServiceConnection
+    static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16");
 
     @Autowired
     UserRepository userRepository;
@@ -32,31 +41,15 @@ class UserRepositoryIT {
 
     @BeforeEach
     void setUp() {
-        user1 = userRepository.save(
-                User.builder()
-                        .name("María")
-                        .lastName("García")
-                        .email("maria.garcia@example.com")
-                        .role("ROLE_ALUMNO")
-                        .keycloakId("kc-001")
-                        .isActive(true)
-                        .mustChangePassword(false)
-                        .createAccount(LocalDate.now())
-                        .build()
-        );
+        user1 = userRepository.save(User.builder()
+                .name("María").lastName("García").email("maria.garcia@example.com")
+                .role("ROLE_ALUMNO").keycloakId("kc-001").isActive(true)
+                .mustChangePassword(false).createAccount(LocalDate.now()).build());
 
-        user2 = userRepository.save(
-                User.builder()
-                        .name("Pedro")
-                        .lastName("Martínez")
-                        .email("pedro.martinez@example.com")
-                        .role("ROLE_INSTRUCTOR")
-                        .keycloakId("kc-002")
-                        .isActive(true)
-                        .mustChangePassword(true)
-                        .createAccount(LocalDate.now())
-                        .build()
-        );
+        user2 = userRepository.save(User.builder()
+                .name("Pedro").lastName("Martínez").email("pedro.martinez@example.com")
+                .role("ROLE_INSTRUCTOR").keycloakId("kc-002").isActive(true)
+                .mustChangePassword(true).createAccount(LocalDate.now()).build());
     }
 
     @AfterEach
@@ -64,15 +57,10 @@ class UserRepositoryIT {
         userRepository.deleteAll();
     }
 
-    // =========================================================
-    //  findByEmail
-    // =========================================================
-
     @Test
     @DisplayName("findByEmail: devuelve el usuario cuando el email existe")
     void findByEmail_found() {
         Optional<User> result = userRepository.findByEmail("maria.garcia@example.com");
-
         assertThat(result).isPresent();
         assertThat(result.get().getName()).isEqualTo("María");
         assertThat(result.get().getRole()).isEqualTo("ROLE_ALUMNO");
@@ -81,20 +69,13 @@ class UserRepositoryIT {
     @Test
     @DisplayName("findByEmail: devuelve empty cuando el email no existe")
     void findByEmail_notFound() {
-        Optional<User> result = userRepository.findByEmail("noexiste@example.com");
-
-        assertThat(result).isEmpty();
+        assertThat(userRepository.findByEmail("noexiste@example.com")).isEmpty();
     }
-
-    // =========================================================
-    //  findByKeycloakId
-    // =========================================================
 
     @Test
     @DisplayName("findByKeycloakId: devuelve el usuario cuando el keycloakId existe")
     void findByKeycloakId_found() {
         Optional<User> result = userRepository.findByKeycloakId("kc-002");
-
         assertThat(result).isPresent();
         assertThat(result.get().getEmail()).isEqualTo("pedro.martinez@example.com");
         assertThat(result.get().getMustChangePassword()).isTrue();
@@ -103,14 +84,8 @@ class UserRepositoryIT {
     @Test
     @DisplayName("findByKeycloakId: devuelve empty cuando el keycloakId no existe")
     void findByKeycloakId_notFound() {
-        Optional<User> result = userRepository.findByKeycloakId("kc-inexistente");
-
-        assertThat(result).isEmpty();
+        assertThat(userRepository.findByKeycloakId("kc-inexistente")).isEmpty();
     }
-
-    // =========================================================
-    //  findAll
-    // =========================================================
 
     @Test
     @DisplayName("findAll: devuelve todos los usuarios guardados")
@@ -118,25 +93,13 @@ class UserRepositoryIT {
         assertThat(userRepository.findAll()).hasSize(2);
     }
 
-    // =========================================================
-    //  save / update
-    // =========================================================
-
     @Test
     @DisplayName("save: persiste correctamente un nuevo usuario")
     void save_persistsNewUser() {
-        User newUser = userRepository.save(
-                User.builder()
-                        .name("Laura")
-                        .lastName("Sánchez")
-                        .email("laura.sanchez@example.com")
-                        .role("ROLE_ALUMNO")
-                        .keycloakId("kc-003")
-                        .isActive(true)
-                        .mustChangePassword(false)
-                        .createAccount(LocalDate.now())
-                        .build()
-        );
+        User newUser = userRepository.save(User.builder()
+                .name("Laura").lastName("Sánchez").email("laura.sanchez@example.com")
+                .role("ROLE_ALUMNO").keycloakId("kc-003").isActive(true)
+                .mustChangePassword(false).createAccount(LocalDate.now()).build());
 
         assertThat(newUser.getId()).isNotNull();
         assertThat(userRepository.findAll()).hasSize(3);
@@ -153,15 +116,10 @@ class UserRepositoryIT {
         assertThat(updated.get().getName()).isEqualTo("María Elena");
     }
 
-    // =========================================================
-    //  deleteById
-    // =========================================================
-
     @Test
     @DisplayName("deleteById: elimina el usuario correctamente")
     void deleteById_removesUser() {
         userRepository.deleteById(user1.getId());
-
         assertThat(userRepository.findById(user1.getId())).isEmpty();
         assertThat(userRepository.findAll()).hasSize(1);
     }

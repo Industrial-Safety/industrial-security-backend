@@ -5,15 +5,12 @@ spring:
     config:
       enabled: false
   rabbitmq:
-    host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5672}
-    username: ${RABBITMQ_USER:guest}
-    password: ${RABBITMQ_PASS:guest}
     listener:
       simple:
+        # Manual ack requerido por NotificationEventConsumer (channel.basicAck/basicNack)
         acknowledge-mode: manual
   mail:
-    host: ""   # vacío → EmailService omite el envío (modo seguro en tests)
+    host: ""   # vacío → EmailService omite el envío real en tests
 
 eureka:
   client:

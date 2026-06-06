@@ -1,7 +1,9 @@
 package com.logistica.purchase.integration.controller;
 
 import com.logistica.purchase.entity.InventoryItem;
+import com.logistica.purchase.integration.BasePurchaseIT;
 import com.logistica.purchase.messaging.EppEventPublisher;
+import com.logistica.purchase.messaging.SolicitudEventPublisher;
 import com.logistica.purchase.repository.EppDeliveryRepository;
 import com.logistica.purchase.repository.InventoryRepository;
 import com.logistica.purchase.repository.PurchaseRequestRepository;
@@ -11,10 +13,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.client.RestTemplate;
@@ -23,27 +22,18 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(
-        webEnvironment = SpringBootTest.WebEnvironment.MOCK,
-        properties = {
-                "spring.cloud.config.enabled=false",
-                "eureka.client.enabled=false",
-                "spring.jpa.hibernate.ddl-auto=create-drop"
-        }
-)
-@AutoConfigureMockMvc
 @Tag("integration")
-@ActiveProfiles("test")
 @DisplayName("InventoryController — Pruebas de Integración")
-class InventoryControllerIT {
+class InventoryControllerIT extends BasePurchaseIT {
 
-    @Autowired MockMvc              mockMvc;
-    @Autowired InventoryRepository  inventoryRepository;
+    @Autowired MockMvc               mockMvc;
+    @Autowired InventoryRepository   inventoryRepository;
     @Autowired EppDeliveryRepository deliveryRepository;
     @Autowired PurchaseRequestRepository purchaseRepository;
 
-    @MockitoBean EppEventPublisher eventPublisher;
-    @MockitoBean RestTemplate      restTemplate;
+    @MockitoBean EppEventPublisher       eventPublisher;
+    @MockitoBean SolicitudEventPublisher solicitudEventPublisher;
+    @MockitoBean RestTemplate            restTemplate;
 
     private static final String BASE_URL = "/api/v1/purchase/inventory";
 

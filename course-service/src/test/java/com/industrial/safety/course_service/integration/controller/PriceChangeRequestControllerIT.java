@@ -1,6 +1,7 @@
 package com.industrial.safety.course_service.integration.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.industrial.safety.course_service.integration.BaseCourseIT;
 import com.industrial.safety.course_service.messaging.PriceChangeEventPublisher;
 import com.industrial.safety.course_service.model.Course;
 import com.industrial.safety.course_service.model.PriceChangeRequest;
@@ -14,13 +15,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -31,23 +29,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(
-        webEnvironment = SpringBootTest.WebEnvironment.MOCK,
-        properties = {
-                "spring.cloud.config.enabled=false",
-                "eureka.client.enabled=false"
-        }
-)
-@AutoConfigureMockMvc
 @Tag("integration")
-@ActiveProfiles("test")
 @DisplayName("PriceChangeRequestController — Pruebas de Integración")
-class PriceChangeRequestControllerIT {
+class PriceChangeRequestControllerIT extends BaseCourseIT {
 
-    @Autowired MockMvc                       mockMvc;
-    @Autowired ObjectMapper                  objectMapper;
-    @Autowired CourseRepository              courseRepository;
-    @Autowired PriceChangeRequestRepository  priceChangeRepository;
+    @Autowired MockMvc                      mockMvc;
+    @Autowired ObjectMapper                 objectMapper;
+    @Autowired CourseRepository             courseRepository;
+    @Autowired PriceChangeRequestRepository priceChangeRepository;
 
     @MockitoBean PriceChangeEventPublisher publisher;
     @MockitoBean AssetCacheService         assetCacheService;
@@ -55,7 +44,7 @@ class PriceChangeRequestControllerIT {
 
     private static final String BASE_URL = "/api/v1/course/price-requests";
 
-    private Course          savedCourse;
+    private Course             savedCourse;
     private PriceChangeRequest savedRequest;
 
     @BeforeEach

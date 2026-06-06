@@ -11,19 +11,28 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.test.context.ActiveProfiles;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.util.Optional;
 
-import org.springframework.test.context.ActiveProfiles;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
 @Tag("integration")
+@Testcontainers
 @DisplayName("PaymentRepository — Pruebas de Integración con PostgreSQL")
 class PaymentRepositoryIT {
+
+    @Container
+    @ServiceConnection
+    static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16");
 
     @Autowired
     PaymentRepository paymentRepository;
@@ -33,31 +42,17 @@ class PaymentRepositoryIT {
 
     @BeforeEach
     void setUp() {
-        payment1 = paymentRepository.save(
-                Payment.builder()
-                        .orderNumber("ORD-001")
-                        .userId("user-A")
-                        .userEmail("user-a@example.com")
-                        .amount(new BigDecimal("39.99"))
-                        .currency("USD")
-                        .paymentIntentId("pi_001")
-                        .idempotencyKey("idem-key-001")
-                        .status(PaymentStatus.SUCCEEDED)
-                        .build()
-        );
+        payment1 = paymentRepository.save(Payment.builder()
+                .orderNumber("ORD-001").userId("user-A").userEmail("user-a@example.com")
+                .amount(new BigDecimal("39.99")).currency("USD")
+                .paymentIntentId("pi_001").idempotencyKey("idem-key-001")
+                .status(PaymentStatus.SUCCEEDED).build());
 
-        payment2 = paymentRepository.save(
-                Payment.builder()
-                        .orderNumber("ORD-002")
-                        .userId("user-B")
-                        .userEmail("user-b@example.com")
-                        .amount(new BigDecimal("59.99"))
-                        .currency("USD")
-                        .paymentIntentId("pi_002")
-                        .idempotencyKey("idem-key-002")
-                        .status(PaymentStatus.PENDING)
-                        .build()
-        );
+        payment2 = paymentRepository.save(Payment.builder()
+                .orderNumber("ORD-002").userId("user-B").userEmail("user-b@example.com")
+                .amount(new BigDecimal("59.99")).currency("USD")
+                .paymentIntentId("pi_002").idempotencyKey("idem-key-002")
+                .status(PaymentStatus.PENDING).build());
     }
 
     @AfterEach
@@ -65,15 +60,10 @@ class PaymentRepositoryIT {
         paymentRepository.deleteAll();
     }
 
-    // =========================================================
-    //  findByOrderNumber
-    // =========================================================
-
     @Test
     @DisplayName("findByOrderNumber: devuelve el pago cuando el número de orden existe")
     void findByOrderNumber_found() {
         Optional<Payment> result = paymentRepository.findByOrderNumber("ORD-001");
-
         assertThat(result).isPresent();
         assertThat(result.get().getStatus()).isEqualTo(PaymentStatus.SUCCEEDED);
         assertThat(result.get().getAmount()).isEqualByComparingTo("39.99");
@@ -85,15 +75,10 @@ class PaymentRepositoryIT {
         assertThat(paymentRepository.findByOrderNumber("ORD-FALSO")).isEmpty();
     }
 
-    // =========================================================
-    //  findByPaymentIntentId
-    // =========================================================
-
     @Test
     @DisplayName("findByPaymentIntentId: devuelve el pago cuando el intent existe")
     void findByPaymentIntentId_found() {
         Optional<Payment> result = paymentRepository.findByPaymentIntentId("pi_002");
-
         assertThat(result).isPresent();
         assertThat(result.get().getOrderNumber()).isEqualTo("ORD-002");
     }
@@ -103,10 +88,6 @@ class PaymentRepositoryIT {
     void findByPaymentIntentId_notFound() {
         assertThat(paymentRepository.findByPaymentIntentId("pi_inexistente")).isEmpty();
     }
-
-    // =========================================================
-    //  existsByOrderNumber
-    // =========================================================
 
     @Test
     @DisplayName("existsByOrderNumber: true cuando el número existe")
@@ -119,10 +100,6 @@ class PaymentRepositoryIT {
     void existsByOrderNumber_false() {
         assertThat(paymentRepository.existsByOrderNumber("ORD-NO-EXISTE")).isFalse();
     }
-
-    // =========================================================
-    //  save / update
-    // =========================================================
 
     @Test
     @DisplayName("save: actualiza el estado del pago correctamente")

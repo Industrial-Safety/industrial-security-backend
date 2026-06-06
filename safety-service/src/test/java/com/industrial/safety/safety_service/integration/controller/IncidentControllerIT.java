@@ -1,5 +1,6 @@
 package com.industrial.safety.safety_service.integration.controller;
 
+import com.industrial.safety.safety_service.integration.BaseSafetyIT;
 import com.industrial.safety.safety_service.messaging.SafetyAlertPublisher;
 import com.industrial.safety.safety_service.model.Incident;
 import com.industrial.safety.safety_service.model.WorkerComplianceScore;
@@ -13,10 +14,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -26,19 +24,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(
-        webEnvironment = SpringBootTest.WebEnvironment.MOCK,
-        properties = {
-                "spring.cloud.config.enabled=false",
-                "eureka.client.enabled=false",
-                "spring.jpa.hibernate.ddl-auto=create-drop"
-        }
-)
-@AutoConfigureMockMvc
 @Tag("integration")
-@ActiveProfiles("test")
 @DisplayName("IncidentController — Pruebas de Integración")
-class IncidentControllerIT {
+class IncidentControllerIT extends BaseSafetyIT {
 
     @Autowired MockMvc                         mockMvc;
     @Autowired IncidentRepository              incidentRepository;

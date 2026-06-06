@@ -1,6 +1,7 @@
 package com.industrial.safety.course_service.integration.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.industrial.safety.course_service.integration.BaseCourseIT;
 import com.industrial.safety.course_service.model.Course;
 import com.industrial.safety.course_service.model.record.Details;
 import com.industrial.safety.course_service.model.record.Review;
@@ -13,13 +14,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.ActiveProfiles;
-import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import org.springframework.test.web.servlet.MockMvc;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -31,27 +29,16 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(
-        webEnvironment = SpringBootTest.WebEnvironment.MOCK,
-        properties = {
-                "spring.cloud.config.enabled=false",
-                "eureka.client.enabled=false",
-                "spring.jpa.hibernate.ddl-auto=create-drop"
-        }
-)
-@AutoConfigureMockMvc
 @Tag("integration")
-@ActiveProfiles("test")
 @DisplayName("CourseController — Pruebas de Integración")
-class CourseControllerIT {
+class CourseControllerIT extends BaseCourseIT {
 
-    @Autowired MockMvc        mockMvc;
-    @Autowired ObjectMapper   objectMapper;
+    @Autowired MockMvc          mockMvc;
+    @Autowired ObjectMapper     objectMapper;
     @Autowired CourseRepository courseRepository;
 
-    // AssetCacheService depende de Redis; lo mockeamos para el test de integración
     @MockitoBean AssetCacheService assetCacheService;
-    @MockitoBean S3Presigner        s3Presigner;
+    @MockitoBean S3Presigner       s3Presigner;
 
     private static final String BASE_URL = "/api/v1/course";
 

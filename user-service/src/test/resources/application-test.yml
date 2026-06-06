@@ -4,11 +4,6 @@ spring:
   cloud:
     config:
       enabled: false
-  datasource:
-    url: jdbc:postgresql://localhost:5435/user-db
-    username: admin
-    password: admin
-    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: create-drop

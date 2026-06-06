@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.industrial.safety.payment_service.client.MercadoPagoClient;
 import com.industrial.safety.payment_service.domain.Payment;
 import com.industrial.safety.payment_service.domain.PaymentStatus;
+import com.industrial.safety.payment_service.integration.BasePaymentIT;
 import com.industrial.safety.payment_service.messaging.PaymentEventPublisher;
 import com.industrial.safety.payment_service.repository.PaymentRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -12,10 +13,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -28,26 +26,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(
-        webEnvironment = SpringBootTest.WebEnvironment.MOCK,
-        properties = {
-                "spring.cloud.config.enabled=false",
-                "eureka.client.enabled=false",
-                "spring.jpa.hibernate.ddl-auto=create-drop",
-                "spring.security.oauth2.resourceserver.jwt.jwk-set-uri=http://localhost:9999/jwks"
-        }
-)
-@AutoConfigureMockMvc
 @Tag("integration")
-@ActiveProfiles("test")
 @DisplayName("PaymentController — Pruebas de Integración")
-class PaymentControllerIT {
+class PaymentControllerIT extends BasePaymentIT {
 
-    @Autowired MockMvc            mockMvc;
-    @Autowired ObjectMapper       objectMapper;
-    @Autowired PaymentRepository  paymentRepository;
+    @Autowired MockMvc           mockMvc;
+    @Autowired ObjectMapper      objectMapper;
+    @Autowired PaymentRepository paymentRepository;
 
-    @MockitoBean MercadoPagoClient    mercadoPagoClient;
+    @MockitoBean MercadoPagoClient     mercadoPagoClient;
     @MockitoBean PaymentEventPublisher paymentEventPublisher;
 
     private static final String BASE_URL = "/api/v1/payments";
@@ -56,6 +43,8 @@ class PaymentControllerIT {
 
     @BeforeEach
     void setUp() {
+        paymentRepository.deleteAll();
+
         savedPayment = paymentRepository.save(
                 Payment.builder()
                         .orderNumber("ORD-PAY-001")
@@ -73,10 +62,6 @@ class PaymentControllerIT {
     void cleanUp() {
         paymentRepository.deleteAll();
     }
-
-    // =========================================================
-    //  GET /api/v1/payments/{orderNumber}
-    // =========================================================
 
     @Test
     @DisplayName("GET /api/v1/payments/{orderNumber} → 200 cuando el pago existe")
@@ -96,10 +81,6 @@ class PaymentControllerIT {
                         .with(jwt()))
                 .andExpect(status().isNotFound());
     }
-
-    // =========================================================
-    //  POST /api/v1/payments/webhook
-    // =========================================================
 
     @Test
     @DisplayName("POST /api/v1/payments/webhook → 200 con firma válida")

@@ -5,6 +5,7 @@ import com.logistica.purchase.dto.EppDeliveryRequest;
 import com.logistica.purchase.dto.EppDeliveryResponse;
 import com.logistica.purchase.entity.EppDelivery;
 import com.logistica.purchase.entity.PurchaseRequest;
+import com.logistica.purchase.entity.PurchaseRequestStatus;
 import com.logistica.purchase.exception.InsufficientStockException;
 import com.logistica.purchase.exception.ResourceNotFoundException;
 import com.logistica.purchase.mapper.EppDeliveryMapper;
@@ -53,7 +54,7 @@ class EppDeliveryServiceImplTest {
                 .id(1L)
                 .categoria("Casco")
                 .cantidad(10)
-                .estado("APROBADO")
+                .estado(PurchaseRequestStatus.APROBADO)
                 .build();
     }
 

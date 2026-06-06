@@ -29,3 +29,6 @@ receipts/
 
 # Keycloak backups (contienen secretos)
 keycloak-backup/
+
+# Documentación local (no va al repo)
+docs/
