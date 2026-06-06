@@ -1,4 +1,9 @@
 spring:
+  config:
+    import: "optional:configserver:"
+  cloud:
+    config:
+      enabled: false
   security:
     oauth2:
       client:
@@ -12,13 +17,15 @@ spring:
             scope: openid, profile, email
         provider:
           keycloak:
-            issuer-uri: http://localhost:9090/realms/industrial-safety
+            authorization-uri: http://localhost:9090/realms/industrial-safety/protocol/openid-connect/auth
+            token-uri: http://localhost:9090/realms/industrial-safety/protocol/openid-connect/token
+            jwk-set-uri: http://localhost:9090/realms/industrial-safety/protocol/openid-connect/certs
+            user-info-uri: http://localhost:9090/realms/industrial-safety/protocol/openid-connect/userinfo
+            user-name-attribute: preferred_username
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:9090/realms/industrial-safety
+          jwk-set-uri: http://localhost:9090/realms/industrial-safety/protocol/openid-connect/certs
 
 eureka:
   client:
     enabled: false
-
-spring.cloud.config.enabled: false

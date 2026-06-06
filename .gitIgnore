@@ -6,6 +6,7 @@
 .idea/
 .idea/runConfigurations/
 *.xml
+!pom.xml
 # Archivos de sistema y logs
 *.log
 .DS_Store
