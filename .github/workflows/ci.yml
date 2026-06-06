@@ -14,6 +14,9 @@ permissions:
 env:
   JAVA_VERSION: "25"
   MAVEN_OPTS: "-Xmx2048m"
+  # Ryuk (reaper de Testcontainers) falla al descargarse por rate-limit de Docker Hub
+  # en los runners. En CI efímero no se necesita: el runner se destruye al terminar.
+  TESTCONTAINERS_RYUK_DISABLED: "true"
 
 jobs:
   # ============================================================

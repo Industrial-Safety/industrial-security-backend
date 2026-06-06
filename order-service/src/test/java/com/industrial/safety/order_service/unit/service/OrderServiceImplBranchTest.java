@@ -142,6 +142,60 @@ class OrderServiceImplBranchTest {
         assertThat(savedOrder.getOrderStatus()).isEqualTo(OrderStatus.PROCESSING);
     }
 
+    @Test
+    @DisplayName("updateStatus: PROCESSING -> COMPLETED válido")
+    void updateStatus_processingToCompleted_valid() {
+        savedOrder.setOrderStatus(OrderStatus.PROCESSING);
+        given(orderRepository.findByOrderNumber("ORD-1")).willReturn(java.util.Optional.of(savedOrder));
+        orderService.updateStatus("ORD-1", OrderStatus.COMPLETED);
+        assertThat(savedOrder.getOrderStatus()).isEqualTo(OrderStatus.COMPLETED);
+    }
+
+    @Test
+    @DisplayName("updateStatus: PROCESSING -> PENDING ilegal")
+    void updateStatus_processingToPending_illegal() {
+        savedOrder.setOrderStatus(OrderStatus.PROCESSING);
+        given(orderRepository.findByOrderNumber("ORD-1")).willReturn(java.util.Optional.of(savedOrder));
+        assertThatThrownBy(() -> orderService.updateStatus("ORD-1", OrderStatus.PENDING))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    @DisplayName("updateStatus: PENDING -> CANCELLED válido")
+    void updateStatus_pendingToCancelled_valid() {
+        savedOrder.setOrderStatus(OrderStatus.PENDING);
+        given(orderRepository.findByOrderNumber("ORD-1")).willReturn(java.util.Optional.of(savedOrder));
+        orderService.updateStatus("ORD-1", OrderStatus.CANCELLED);
+        assertThat(savedOrder.getOrderStatus()).isEqualTo(OrderStatus.CANCELLED);
+    }
+
+    @Test
+    @DisplayName("updateStatus: FAILED -> CANCELLED válido")
+    void updateStatus_failedToCancelled_valid() {
+        savedOrder.setOrderStatus(OrderStatus.FAILED);
+        given(orderRepository.findByOrderNumber("ORD-1")).willReturn(java.util.Optional.of(savedOrder));
+        orderService.updateStatus("ORD-1", OrderStatus.CANCELLED);
+        assertThat(savedOrder.getOrderStatus()).isEqualTo(OrderStatus.CANCELLED);
+    }
+
+    @Test
+    @DisplayName("updateStatus: FAILED -> COMPLETED ilegal")
+    void updateStatus_failedToCompleted_illegal() {
+        savedOrder.setOrderStatus(OrderStatus.FAILED);
+        given(orderRepository.findByOrderNumber("ORD-1")).willReturn(java.util.Optional.of(savedOrder));
+        assertThatThrownBy(() -> orderService.updateStatus("ORD-1", OrderStatus.COMPLETED))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    @DisplayName("updateStatus: CANCELLED -> PROCESSING ilegal")
+    void updateStatus_cancelledToProcessing_illegal() {
+        savedOrder.setOrderStatus(OrderStatus.CANCELLED);
+        given(orderRepository.findByOrderNumber("ORD-1")).willReturn(java.util.Optional.of(savedOrder));
+        assertThatThrownBy(() -> orderService.updateStatus("ORD-1", OrderStatus.PROCESSING))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
     // ===================== processPaymentResult: ramas extra =====================
 
     @Test

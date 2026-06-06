@@ -58,6 +58,13 @@ class CouponTest {
     }
 
     @Test
+    @DisplayName("isUsable: con maxUses pero aún no alcanzado -> true")
+    void isUsable_maxUsesNotReached_true() {
+        Coupon c = activeBuilder().maxUses(5).currentUses(2).build();
+        assertThat(c.isUsable("c1")).isTrue();
+    }
+
+    @Test
     @DisplayName("isUsable: curso distinto al del cupón -> false")
     void isUsable_courseMismatch_false() {
         Coupon c = activeBuilder().courseId("course-A").build();

@@ -123,6 +123,40 @@ class KeycloakServiceImplTest {
     }
 
     @Test
+    @DisplayName("createUser: 409 con searchByEmail null -> excepción")
+    void createUser_conflict_nullSearch_throws() {
+        given(usersResource.create(any())).willReturn(response);
+        given(response.getStatus()).willReturn(409);
+        given(usersResource.searchByEmail("a@e.com", true)).willReturn(null);
+
+        assertThatThrownBy(() -> service.createUser(req())).isInstanceOf(RuntimeException.class);
+    }
+
+    @Test
+    @DisplayName("assignRole: nombre de rol sin prefijo ROLE_")
+    void assignRole_roleWithoutPrefix() {
+        service.assignRole("uid-1", "ADMIN");
+        then(roleScopeResource).should().add(anyList());
+    }
+
+    @Test
+    @DisplayName("getUserIdByEmail: usuarios null -> excepción")
+    void getUserIdByEmail_nullList_throws() {
+        given(usersResource.searchByEmail("z@e.com", true)).willReturn(null);
+        assertThatThrownBy(() -> service.getUserIdByEmail("z@e.com")).isInstanceOf(RuntimeException.class);
+    }
+
+    @Test
+    @DisplayName("createUser: status < 200 -> excepción")
+    void createUser_statusBelow200_throws() {
+        given(usersResource.create(any())).willReturn(response);
+        given(response.getStatus()).willReturn(199);
+        given(response.readEntity(String.class)).willReturn("weird");
+
+        assertThatThrownBy(() -> service.createUser(req())).isInstanceOf(RuntimeException.class);
+    }
+
+    @Test
     @DisplayName("getUserIdByEmail: encontrado")
     void getUserIdByEmail_found() {
         UserRepresentation u = new UserRepresentation();

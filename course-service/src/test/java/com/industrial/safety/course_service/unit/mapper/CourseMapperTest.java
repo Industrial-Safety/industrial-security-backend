@@ -99,6 +99,36 @@ class CourseMapperTest {
     }
 
     @Test
+    @DisplayName("toCourse: anidados con colecciones internas null (sección sin lecciones, lección sin recursos)")
+    void toCourse_partialNestedNulls() {
+        LectureRequest lectureNoResources = new LectureRequest("L", "1:00", LECTURE_TYPE, "url", false, null);
+        SectionRequest sectionNoLectures = new SectionRequest("S vacía", null);
+        SectionRequest sectionWithLecture = new SectionRequest("S", List.of(lectureNoResources));
+        CourseRequest req = new CourseRequest("Curso", "Sub", null, null, null, null, null,
+                List.of(sectionNoLectures, sectionWithLecture), null);
+
+        Course course = mapper.toCourse(req);
+
+        assertThat(course.getSectionList()).hasSize(2);
+        assertThat(course.getSectionList().get(0).getLectureList()).isNull();
+    }
+
+    @Test
+    @DisplayName("toCourseResponse: anidados con colecciones internas null")
+    void toCourseResponse_partialNestedNulls() {
+        Lecture lectureNoResources = Lecture.builder().id("l1").title("L").resourceList(null).build();
+        Section sectionNoLectures = Section.builder().id("s0").title("S vacía").lectureList(null).build();
+        Section sectionWithLecture = Section.builder().id("s1").title("S").lectureList(List.of(lectureNoResources)).build();
+        Course course = Course.builder().id("c1").title("Curso")
+                .sectionList(List.of(sectionNoLectures, sectionWithLecture)).build();
+
+        CourseResponse response = mapper.toCourseResponse(course);
+
+        assertThat(response.sectionList()).hasSize(2);
+        assertThat(response.sectionList().get(0).lectureList()).isNull();
+    }
+
+    @Test
     @DisplayName("métodos individuales con objeto poblado")
     void individualMappers_populated() {
         assertThat(mapper.toResource(new ResourceRequest("R", RESOURCE_TYPE, "http://x", "1MB"))).isNotNull();

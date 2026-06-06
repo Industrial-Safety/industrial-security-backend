@@ -69,6 +69,19 @@ class AssetCacheServiceTest {
     }
 
     @Test
+    @DisplayName("cacheCourse: sección con lista de lecciones null no rompe")
+    void cacheCourse_sectionWithNullLectures() {
+        given(redisTemplate.opsForValue()).willReturn(valueOps);
+        Section section = Section.builder().id("s1").lectureList(null).build();
+        Course course = Course.builder().id("c1").coverImageUrl("http://cover")
+                .sectionList(List.of(section)).build();
+
+        service.cacheCourse(course);
+
+        then(valueOps).should().set(eq("course:c1:cover"), eq("http://cover"), any());
+    }
+
+    @Test
     @DisplayName("cacheCourse: sin cover ni secciones no cachea nada")
     void cacheCourse_empty() {
         given(redisTemplate.opsForValue()).willReturn(valueOps);

@@ -70,6 +70,43 @@ class UserServiceImplBranchTest {
     }
 
     @Test
+    @DisplayName("createUser: usuario existente con keycloakId entrante en blanco -> no sincroniza")
+    void createUser_existing_blankIncomingKeycloakId_noSync() {
+        User existing = User.builder().id("u1").keycloakId("kc").email("a@e.com").build();
+        given(userRepository.findByEmail("a@e.com")).willReturn(Optional.of(existing));
+        given(userMapper.toUserResponse(existing)).willReturn(new UserResponse());
+
+        service.createUser(req("a@e.com", "x", "   "));
+
+        then(userRepository).should(never()).save(any());
+    }
+
+    @Test
+    @DisplayName("createUser: usuario existente con mismo keycloakId -> no sincroniza")
+    void createUser_existing_sameKeycloakId_noSync() {
+        User existing = User.builder().id("u1").keycloakId("kc-same").email("a@e.com").build();
+        given(userRepository.findByEmail("a@e.com")).willReturn(Optional.of(existing));
+        given(userMapper.toUserResponse(existing)).willReturn(new UserResponse());
+
+        service.createUser(req("a@e.com", "x", "kc-same"));
+
+        then(userRepository).should(never()).save(any());
+    }
+
+    @Test
+    @DisplayName("createUser: nuevo con mustChangePassword explícito (no admin)")
+    void createUser_new_explicitMustChangePassword() {
+        given(userRepository.findByEmail("a@e.com")).willReturn(Optional.empty());
+        given(userMapper.toUser(any())).willReturn(User.builder().build());
+        given(userRepository.save(any())).willAnswer(i -> i.getArgument(0));
+        given(userMapper.toUserResponse(any())).willReturn(new UserResponse());
+        UserRequest r = req("a@e.com", "x", "kc-1");
+        r.setMustChangePassword(false);
+
+        assertThat(service.createUser(r).isNew()).isTrue();
+    }
+
+    @Test
     @DisplayName("createUser: usuario existente sin keycloakId entrante -> no sincroniza")
     void createUser_existing_noSync() {
         User existing = User.builder().id("u1").keycloakId("kc").email("a@e.com").build();
@@ -198,6 +235,48 @@ class UserServiceImplBranchTest {
         service.changePassword("kc", "  ", "newpw");
 
         then(userRepository).should(never()).findByEmail(anyString());
+    }
+
+    @Test
+    @DisplayName("getUserById: no encontrado -> ResourceNotFoundException")
+    void getUserById_notFound() {
+        given(userRepository.findById("x")).willReturn(Optional.empty());
+        assertThatThrownBy(() -> service.getUserById("x")).isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("getUserById: encontrado")
+    void getUserById_found() {
+        User user = User.builder().id("u1").build();
+        given(userRepository.findById("u1")).willReturn(Optional.of(user));
+        given(userMapper.toUserResponse(user)).willReturn(new UserResponse());
+        assertThat(service.getUserById("u1")).isNotNull();
+    }
+
+    @Test
+    @DisplayName("updateUser: no encontrado -> ResourceNotFoundException")
+    void updateUser_notFound() {
+        given(userRepository.findById("x")).willReturn(Optional.empty());
+        assertThatThrownBy(() -> service.updateUser("x", req("a@e.com", "x", null)))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("updateUserAdmin: no encontrado -> ResourceNotFoundException")
+    void updateUserAdmin_notFound() {
+        given(userRepository.findById("x")).willReturn(Optional.empty());
+        assertThatThrownBy(() -> service.updateUserAdmin("x",
+                com.industrial.safety.user_service.dto.UserUpdateRequest.builder().name("N").build()))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("toListUser: mapea todos los usuarios")
+    void toListUser_mapsAll() {
+        User user = User.builder().id("u1").build();
+        given(userRepository.findAll()).willReturn(java.util.List.of(user));
+        given(userMapper.toUserResponse(user)).willReturn(new UserResponse());
+        assertThat(service.toListUser()).hasSize(1);
     }
 
     @Test
