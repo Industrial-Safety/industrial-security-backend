@@ -121,7 +121,7 @@ jobs:
         if: always()
         with:
           name: "Integration Tests — ${{ matrix.service }}"
-          path: "${{ matrix.service }}/target/failsafe-reports/*.xml"
+          path: "${{ matrix.service }}/target/failsafe-reports/TEST-*.xml"
           reporter: java-junit
           fail-on-error: false
 
