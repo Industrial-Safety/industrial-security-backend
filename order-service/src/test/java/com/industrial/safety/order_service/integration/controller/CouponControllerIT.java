@@ -1,6 +1,7 @@
 package com.industrial.safety.order_service.integration.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.industrial.safety.order_service.integration.BaseOrderIT;
 import com.industrial.safety.order_service.messaging.OrderEventPublisher;
 import com.industrial.safety.order_service.models.Coupon;
 import com.industrial.safety.order_service.models.CouponStatus;
@@ -12,10 +13,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -26,23 +24,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(
-        webEnvironment = SpringBootTest.WebEnvironment.MOCK,
-        properties = {
-                "spring.cloud.config.enabled=false",
-                "eureka.client.enabled=false",
-                "spring.jpa.hibernate.ddl-auto=create-drop"
-        }
-)
-@AutoConfigureMockMvc
 @Tag("integration")
-@ActiveProfiles("test")
 @DisplayName("CouponController — Pruebas de Integración")
-class CouponControllerIT {
+class CouponControllerIT extends BaseOrderIT {
 
-    @Autowired MockMvc           mockMvc;
-    @Autowired ObjectMapper      objectMapper;
-    @Autowired CouponRepository  couponRepository;
+    @Autowired MockMvc          mockMvc;
+    @Autowired ObjectMapper     objectMapper;
+    @Autowired CouponRepository couponRepository;
 
     @MockitoBean OrderEventPublisher orderEventPublisher;
 
@@ -52,6 +40,8 @@ class CouponControllerIT {
 
     @BeforeEach
     void setUp() {
+        couponRepository.deleteAll();
+
         savedCoupon = couponRepository.save(
                 Coupon.builder()
                         .code("EPP20")
@@ -70,10 +60,6 @@ class CouponControllerIT {
         couponRepository.deleteAll();
     }
 
-    // =========================================================
-    //  GET /api/v1/orders/coupons
-    // =========================================================
-
     @Test
     @DisplayName("GET /api/v1/orders/coupons → 200 con lista de cupones")
     void getAll_returns200() throws Exception {
@@ -83,10 +69,6 @@ class CouponControllerIT {
                 .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(1))))
                 .andExpect(jsonPath("$[0].code").value("EPP20"));
     }
-
-    // =========================================================
-    //  POST /api/v1/orders/coupons
-    // =========================================================
 
     @Test
     @DisplayName("POST /api/v1/orders/coupons → 201 con payload válido")
@@ -127,10 +109,6 @@ class CouponControllerIT {
                 .andExpect(status().isBadRequest());
     }
 
-    // =========================================================
-    //  PATCH /api/v1/orders/coupons/{id}/toggle
-    // =========================================================
-
     @Test
     @DisplayName("PATCH /api/v1/orders/coupons/{id}/toggle → 200 cambia estado a INACTIVE")
     void toggleStatus_returns200() throws Exception {
@@ -146,10 +124,6 @@ class CouponControllerIT {
                 .andExpect(status().isNotFound());
     }
 
-    // =========================================================
-    //  DELETE /api/v1/orders/coupons/{id}
-    // =========================================================
-
     @Test
     @DisplayName("DELETE /api/v1/orders/coupons/{id} → 204 cuando el cupón existe")
     void delete_returns204() throws Exception {
@@ -163,10 +137,6 @@ class CouponControllerIT {
         mockMvc.perform(delete(BASE_URL + "/{id}", 88888L))
                 .andExpect(status().isNotFound());
     }
-
-    // =========================================================
-    //  GET /api/v1/orders/coupons/preview
-    // =========================================================
 
     @Test
     @DisplayName("GET /api/v1/orders/coupons/preview → 200 con descuento calculado")

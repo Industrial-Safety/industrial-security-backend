@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ main, develop ]
 
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
 env:
   JAVA_VERSION: "25"
   MAVEN_OPTS: "-Xmx2048m"
@@ -15,13 +20,22 @@ jobs:
   #  JOB 1 — PRUEBAS UNITARIAS (rápidas, sin Docker)
   # ============================================================
   unit-tests:
-    name: "Pruebas Unitarias"
+    name: "Unit — ${{ matrix.service }}"
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         service:
+          - safety-service
+          - purchase-service
           - course-service
+          - exam-service
+          - chat-service
+          - order-service
+          - payment-service
+          - user-service
           - notification-service
+          - api-gateway
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -45,12 +59,14 @@ jobs:
       - name: Generar reporte JaCoCo — ${{ matrix.service }}
         working-directory: ${{ matrix.service }}
         run: mvn jacoco:report --no-transfer-progress
+        continue-on-error: true
 
       - name: Subir reporte de cobertura
         uses: actions/upload-artifact@v4
         with:
           name: jacoco-${{ matrix.service }}
           path: ${{ matrix.service }}/target/site/jacoco/
+          if-no-files-found: ignore
 
       - name: Publicar resultados JUnit XML
         uses: dorny/test-reporter@v1
@@ -59,18 +75,27 @@ jobs:
           name: "Unit Tests — ${{ matrix.service }}"
           path: "${{ matrix.service }}/target/surefire-reports/*.xml"
           reporter: java-junit
+          fail-on-error: false
 
   # ============================================================
-  #  JOB 2 — PRUEBAS DE INTEGRACIÓN (requiere Docker/Testcontainers)
+  #  JOB 2 — PRUEBAS DE INTEGRACIÓN (Testcontainers, requiere Docker)
   # ============================================================
   integration-tests:
-    name: "Pruebas de Integración"
+    name: "IT — ${{ matrix.service }}"
     needs: unit-tests
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         service:
+          - safety-service
+          - purchase-service
           - course-service
+          - exam-service
+          - chat-service
+          - order-service
+          - payment-service
+          - user-service
           - notification-service
     steps:
       - name: Checkout
@@ -98,18 +123,27 @@ jobs:
           name: "Integration Tests — ${{ matrix.service }}"
           path: "${{ matrix.service }}/target/failsafe-reports/*.xml"
           reporter: java-junit
+          fail-on-error: false
 
   # ============================================================
-  #  JOB 3 — VERIFICACIÓN DE COBERTURA GLOBAL (JaCoCo Check)
+  #  JOB 3 — VERIFICACIÓN DE COBERTURA GLOBAL (JaCoCo)
   # ============================================================
   coverage-check:
-    name: "Verificar Cobertura ≥ 80%"
+    name: "Cobertura ≥ 80% — ${{ matrix.service }}"
     needs: [ unit-tests, integration-tests ]
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         service:
+          - safety-service
+          - purchase-service
           - course-service
+          - exam-service
+          - chat-service
+          - order-service
+          - payment-service
+          - user-service
           - notification-service
     steps:
       - name: Checkout

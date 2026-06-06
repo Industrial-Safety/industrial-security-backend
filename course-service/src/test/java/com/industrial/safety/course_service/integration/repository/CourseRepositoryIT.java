@@ -12,7 +12,11 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.mongodb.test.autoconfigure.DataMongoTest;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.ActiveProfiles;
+import org.testcontainers.containers.MongoDBContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -24,8 +28,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataMongoTest
 @Tag("integration")
 @ActiveProfiles("test")
+@Testcontainers
 @DisplayName("CourseRepository — Pruebas de Integración con MongoDB")
 class CourseRepositoryIT {
+
+    @Container
+    @ServiceConnection
+    static final MongoDBContainer mongo = new MongoDBContainer("mongo:7");
 
     @Autowired
     CourseRepository courseRepository;

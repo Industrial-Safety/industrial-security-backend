@@ -1,6 +1,7 @@
 package com.industrial.safety.order_service.integration.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.industrial.safety.order_service.integration.BaseOrderIT;
 import com.industrial.safety.order_service.messaging.OrderEventPublisher;
 import com.industrial.safety.order_service.models.Order;
 import com.industrial.safety.order_service.models.OrderLineItems;
@@ -12,10 +13,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -27,19 +25,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(
-        webEnvironment = SpringBootTest.WebEnvironment.MOCK,
-        properties = {
-                "spring.cloud.config.enabled=false",
-                "eureka.client.enabled=false",
-                "spring.jpa.hibernate.ddl-auto=create-drop"
-        }
-)
-@AutoConfigureMockMvc
 @Tag("integration")
-@ActiveProfiles("test")
 @DisplayName("OrderController — Pruebas de Integración")
-class OrderControllerIT {
+class OrderControllerIT extends BaseOrderIT {
 
     @Autowired MockMvc         mockMvc;
     @Autowired ObjectMapper    objectMapper;
@@ -53,6 +41,8 @@ class OrderControllerIT {
 
     @BeforeEach
     void setUp() {
+        orderRepository.deleteAll();
+
         var lineItem = OrderLineItems.builder()
                 .idCurso("course-uuid-1")
                 .courseName("Seguridad Industrial")
@@ -79,10 +69,6 @@ class OrderControllerIT {
         orderRepository.deleteAll();
     }
 
-    // =========================================================
-    //  GET /api/v1/orders/{id}
-    // =========================================================
-
     @Test
     @DisplayName("GET /api/v1/orders/{id} → 200 cuando la orden existe")
     void getById_returns200() throws Exception {
@@ -100,10 +86,6 @@ class OrderControllerIT {
                 .andExpect(status().isNotFound());
     }
 
-    // =========================================================
-    //  GET /api/v1/orders/by-number/{orderNumber}
-    // =========================================================
-
     @Test
     @DisplayName("GET /api/v1/orders/by-number/{orderNumber} → 200 cuando existe")
     void getByNumber_returns200() throws Exception {
@@ -118,10 +100,6 @@ class OrderControllerIT {
         mockMvc.perform(get(BASE_URL + "/by-number/{orderNumber}", "ORD-INEXISTENTE"))
                 .andExpect(status().isNotFound());
     }
-
-    // =========================================================
-    //  GET /api/v1/orders/by-user/{userId}
-    // =========================================================
 
     @Test
     @DisplayName("GET /api/v1/orders/by-user/{userId} → 200 con órdenes del usuario")
@@ -140,22 +118,13 @@ class OrderControllerIT {
                 .andExpect(jsonPath("$", hasSize(0)));
     }
 
-    // =========================================================
-    //  GET /api/v1/orders/by-course/{courseId}
-    // =========================================================
-
     @Test
     @DisplayName("GET /api/v1/orders/by-course/{courseId} → 200 solo órdenes COMPLETED")
     void getByCourse_returnsOnlyCompletedOrders() throws Exception {
-        // La orden savedOrder está en PENDING, no debe aparecer
         mockMvc.perform(get(BASE_URL + "/by-course/{courseId}", "course-uuid-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(0)));
     }
-
-    // =========================================================
-    //  POST /api/v1/orders
-    // =========================================================
 
     @Test
     @DisplayName("POST /api/v1/orders → 201 con payload válido")
@@ -204,10 +173,6 @@ class OrderControllerIT {
                         .content(body))
                 .andExpect(status().isBadRequest());
     }
-
-    // =========================================================
-    //  DELETE /api/v1/orders/{id}
-    // =========================================================
 
     @Test
     @DisplayName("DELETE /api/v1/orders/{id} → 204 cuando la orden existe y está PENDING")

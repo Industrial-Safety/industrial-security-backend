@@ -1,7 +1,7 @@
 package com.industrial.safety.chat_service.integration.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.industrial.safety.chat_service.domain.ForumPost;
+import com.industrial.safety.chat_service.integration.BaseChatIT;
 import com.industrial.safety.chat_service.repository.ForumPostRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -9,10 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
@@ -23,21 +20,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(
-        webEnvironment = SpringBootTest.WebEnvironment.MOCK,
-        properties = {
-                "spring.cloud.config.enabled=false",
-                "eureka.client.enabled=false"
-        }
-)
-@AutoConfigureMockMvc
 @Tag("integration")
-@ActiveProfiles("test")
 @DisplayName("ForumController — Pruebas de Integración")
-class ForumControllerIT {
+class ForumControllerIT extends BaseChatIT {
 
-    @Autowired MockMvc            mockMvc;
-    @Autowired ObjectMapper       objectMapper;
+    @Autowired MockMvc             mockMvc;
     @Autowired ForumPostRepository forumPostRepository;
 
     private static final String BASE_URL = "/api/v1/chat/forum";
@@ -46,6 +33,8 @@ class ForumControllerIT {
 
     @BeforeEach
     void setUp() {
+        forumPostRepository.deleteAll();
+
         savedPost = forumPostRepository.save(
                 ForumPost.builder()
                         .id("post-fixture-1")

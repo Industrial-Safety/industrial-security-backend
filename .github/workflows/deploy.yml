@@ -1,0 +1,108 @@
+name: CD — Deploy to AWS ECS
+
+# Se dispara SOLO cuando el CI pasa en main
+on:
+  workflow_run:
+    workflows: ["CI — Industrial Safety Backend"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  id-token: write   # necesario para OIDC con AWS
+  contents: read
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
+  ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}
+  JAVA_VERSION: "25"
+  MAVEN_OPTS: "-Xmx2048m"
+
+jobs:
+  deploy:
+    name: "Deploy — ${{ matrix.service }}"
+    runs-on: ubuntu-latest
+
+    # Solo despliega si el CI terminó con éxito
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    strategy:
+      fail-fast: false   # si un servicio falla, los demás siguen
+      # NOTA: 'ecr' usa el prefijo real del repositorio en ECR (industrial-security/...)
+      #       'ecs' usa el nombre EXACTO del servicio en ECS (incluye el sufijo generado).
+      matrix:
+        include:
+          - { service: safety-service,       ecr: industrial-security/safety-service,       ecs: safety-service-service-6r85geni }
+          - { service: purchase-service,     ecr: industrial-security/purchase-service,     ecs: purchase-service-service-ulonme67 }
+          # solicitudes-service: aún no existe en ECR/ECS. Crear el repo
+          # 'industrial-security/solicitudes-service' y el servicio ECS, y luego
+          # reemplazar el placeholder 'ecs' de abajo con el nombre real del servicio.
+          - { service: solicitudes-service,  ecr: industrial-security/solicitudes-service,  ecs: solicitudes-service-service }
+          - { service: course-service,       ecr: industrial-security/course-service,       ecs: course-service-service-ifmrw0rc }
+          - { service: exam-service,         ecr: industrial-security/exam-service,         ecs: exam-service-service-2nw0ujch }
+          - { service: chat-service,         ecr: industrial-security/chat-service,         ecs: chat-service-service-xf2hmld7 }
+          - { service: order-service,        ecr: industrial-security/order-service,        ecs: order-service-service-rymvdlcl }
+          - { service: payment-service,      ecr: industrial-security/payment-service,      ecs: payment-service-service-4aky5hec }
+          - { service: user-service,         ecr: industrial-security/user-service,         ecs: user-service-service-do5b3398 }
+          - { service: notification-service, ecr: industrial-security/notification-service, ecs: notification-service-service-jxfxyfhi }
+          - { service: api-gateway,          ecr: industrial-security/api-gateway,          ecs: api-gateway-service-41zhurrw }
+
+    steps:
+      # ── 1. Checkout del commit exacto que pasó el CI ──────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      # ── 2. Compilar JAR ───────────────────────────────────────────────
+      - name: Set up Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Build JAR — ${{ matrix.service }}
+        working-directory: ${{ matrix.service }}
+        run: mvn package -DskipTests --no-transfer-progress
+
+      # ── 3. Autenticarse en AWS via OIDC (sin credenciales estáticas) ──
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # ── 4. Login a ECR ────────────────────────────────────────────────
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # ── 5. Build + tag + push imagen Docker ──────────────────────────
+      - name: Build, tag y push imagen Docker — ${{ matrix.service }}
+        env:
+          IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          cd ${{ matrix.service }}
+          docker build -t $ECR_REGISTRY/${{ matrix.ecr }}:$IMAGE_TAG .
+          docker tag  $ECR_REGISTRY/${{ matrix.ecr }}:$IMAGE_TAG \
+                      $ECR_REGISTRY/${{ matrix.ecr }}:latest
+          docker push $ECR_REGISTRY/${{ matrix.ecr }}:$IMAGE_TAG
+          docker push $ECR_REGISTRY/${{ matrix.ecr }}:latest
+
+      # ── 6. Force-new-deployment en ECS ───────────────────────────────
+      - name: Deploy en ECS — ${{ matrix.service }}
+        run: |
+          aws ecs update-service \
+            --cluster $ECS_CLUSTER \
+            --service ${{ matrix.ecs }} \
+            --force-new-deployment \
+            --region $AWS_REGION
+
+      # ── 7. Esperar hasta que la nueva tarea esté RUNNING ─────────────
+      - name: Esperar estabilidad — ${{ matrix.service }}
+        run: |
+          aws ecs wait services-stable \
+            --cluster $ECS_CLUSTER \
+            --services ${{ matrix.ecs }} \
+            --region $AWS_REGION

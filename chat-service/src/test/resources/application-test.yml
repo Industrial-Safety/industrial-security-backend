@@ -4,9 +4,9 @@ spring:
   cloud:
     config:
       enabled: false
-  data:
-    mongodb:
-      uri: mongodb://root:password@localhost:27020/chat-db?authSource=admin
+    aws:
+      parameterstore:
+        enabled: false
 
 eureka:
   client:

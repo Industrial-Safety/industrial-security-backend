@@ -4,8 +4,10 @@ import com.logistica.purchase.dto.PurchaseRequestCreateRequest;
 import com.logistica.purchase.dto.PurchaseRequestResponse;
 import com.logistica.purchase.dto.StatsResponse;
 import com.logistica.purchase.entity.PurchaseRequest;
+import com.logistica.purchase.entity.PurchaseRequestStatus;
 import com.logistica.purchase.exception.ResourceNotFoundException;
 import com.logistica.purchase.mapper.PurchaseRequestMapper;
+import com.logistica.purchase.messaging.SolicitudEventPublisher;
 import com.logistica.purchase.repository.PurchaseRequestRepository;
 import com.logistica.purchase.service.impl.PurchaseRequestServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +35,7 @@ class PurchaseRequestServiceImplTest {
 
     @Mock PurchaseRequestRepository repository;
     @Mock PurchaseRequestMapper     mapper;
+    @Mock SolicitudEventPublisher   solicitudEventPublisher;
 
     @InjectMocks PurchaseRequestServiceImpl service;
 
@@ -50,7 +53,7 @@ class PurchaseRequestServiceImplTest {
                 .proveedor("Proveedor S.A.")
                 .costoEstimado(500.0)
                 .justificacion("Reposición mensual")
-                .estado("PENDIENTE")
+                .estado(PurchaseRequestStatus.PENDIENTE)
                 .build();
 
         pendingResponse = new PurchaseRequestResponse(
@@ -129,7 +132,7 @@ class PurchaseRequestServiceImplTest {
 
             PurchaseRequestResponse result = service.create(request);
 
-            assertThat(entitySinCodigo.getEstado()).isEqualTo("PENDIENTE");
+            assertThat(entitySinCodigo.getEstado()).isEqualTo(PurchaseRequestStatus.PENDIENTE);
             assertThat(result.estado()).isEqualTo("PENDIENTE");
         }
 
@@ -186,6 +189,24 @@ class PurchaseRequestServiceImplTest {
 
             assertThat(entity.getFecha()).isEqualTo(LocalDate.now());
         }
+
+        @Test
+        @DisplayName("publica evento de solicitud tras crear")
+        void create_publishesSolicitudEvent() {
+            PurchaseRequestCreateRequest request = new PurchaseRequestCreateRequest(
+                    null, null, "Casco", 10, "Proveedor S.A.", 500.0, "Reposición");
+
+            PurchaseRequest entity = PurchaseRequest.builder()
+                    .categoria("Casco").cantidad(10).build();
+
+            given(mapper.toEntity(request)).willReturn(entity);
+            given(repository.save(any())).willReturn(pendingEntity);
+            given(mapper.toResponse(pendingEntity)).willReturn(pendingResponse);
+
+            service.create(request);
+
+            then(solicitudEventPublisher).should().publishSolicitud(any());
+        }
     }
 
     // =========================================================
@@ -201,9 +222,9 @@ class PurchaseRequestServiceImplTest {
         given(repository.save(any())).willReturn(pendingEntity);
         given(mapper.toResponse(any())).willReturn(approvedResponse);
 
-        PurchaseRequestResponse result = service.updateStatus(1L, "APROBADO");
+        PurchaseRequestResponse result = service.updateStatus(1L, PurchaseRequestStatus.APROBADO);
 
-        assertThat(pendingEntity.getEstado()).isEqualTo("APROBADO");
+        assertThat(pendingEntity.getEstado()).isEqualTo(PurchaseRequestStatus.APROBADO);
         assertThat(result.estado()).isEqualTo("APROBADO");
     }
 
@@ -212,23 +233,22 @@ class PurchaseRequestServiceImplTest {
     void updateStatus_notFound_throws() {
         given(repository.findById(99L)).willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.updateStatus(99L, "APROBADO"))
+        assertThatThrownBy(() -> service.updateStatus(99L, PurchaseRequestStatus.APROBADO))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
     // =========================================================
-    //  getStats
+    //  getStats — ahora usa queries de BD, no findAll()
     // =========================================================
 
     @Test
-    @DisplayName("getStats: cuenta correctamente por estado")
+    @DisplayName("getStats: cuenta correctamente por estado usando queries")
     void getStats_countsCorrectly() {
-        PurchaseRequest approved = PurchaseRequest.builder()
-                .estado("APROBADO").costoEstimado(200.0).build();
-        PurchaseRequest rejected = PurchaseRequest.builder()
-                .estado("RECHAZADO").costoEstimado(100.0).build();
-
-        given(repository.findAll()).willReturn(List.of(pendingEntity, approved, rejected));
+        given(repository.count()).willReturn(3L);
+        given(repository.countByEstado(PurchaseRequestStatus.PENDIENTE)).willReturn(1L);
+        given(repository.countByEstado(PurchaseRequestStatus.APROBADO)).willReturn(1L);
+        given(repository.countByEstado(PurchaseRequestStatus.RECHAZADO)).willReturn(1L);
+        given(repository.sumCostoEstimado()).willReturn(800.0);
 
         StatsResponse stats = service.getStats();
 
@@ -242,7 +262,11 @@ class PurchaseRequestServiceImplTest {
     @Test
     @DisplayName("getStats: retorna ceros cuando no hay solicitudes")
     void getStats_empty_returnsZeros() {
-        given(repository.findAll()).willReturn(List.of());
+        given(repository.count()).willReturn(0L);
+        given(repository.countByEstado(PurchaseRequestStatus.PENDIENTE)).willReturn(0L);
+        given(repository.countByEstado(PurchaseRequestStatus.APROBADO)).willReturn(0L);
+        given(repository.countByEstado(PurchaseRequestStatus.RECHAZADO)).willReturn(0L);
+        given(repository.sumCostoEstimado()).willReturn(0.0);
 
         StatsResponse stats = service.getStats();
 
@@ -251,18 +275,18 @@ class PurchaseRequestServiceImplTest {
     }
 
     // =========================================================
-    //  getApproved
+    //  getApproved — ahora usa findByEstado(APROBADO)
     // =========================================================
 
     @Test
     @DisplayName("getApproved: retorna solo las solicitudes APROBADO")
     void getApproved_returnsOnlyApproved() {
         PurchaseRequest approved = PurchaseRequest.builder()
-                .id(2L).estado("APROBADO").categoria("Guante").build();
+                .id(2L).estado(PurchaseRequestStatus.APROBADO).categoria("Guante").build();
         PurchaseRequestResponse approvedResp = new PurchaseRequestResponse(
                 2L, "SC-002", LocalDate.now(), "Guante", 5, null, null, null, "APROBADO");
 
-        given(repository.findAll()).willReturn(List.of(pendingEntity, approved));
+        given(repository.findByEstado(PurchaseRequestStatus.APROBADO)).willReturn(List.of(approved));
         given(mapper.toResponse(approved)).willReturn(approvedResp);
 
         List<PurchaseRequestResponse> result = service.getApproved();
@@ -274,7 +298,7 @@ class PurchaseRequestServiceImplTest {
     @Test
     @DisplayName("getApproved: lista vacía si no hay aprobadas")
     void getApproved_noneApproved_returnsEmpty() {
-        given(repository.findAll()).willReturn(List.of(pendingEntity));
+        given(repository.findByEstado(PurchaseRequestStatus.APROBADO)).willReturn(List.of());
 
         assertThat(service.getApproved()).isEmpty();
     }

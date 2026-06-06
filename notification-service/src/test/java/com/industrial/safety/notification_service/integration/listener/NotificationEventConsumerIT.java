@@ -3,6 +3,7 @@ package com.industrial.safety.notification_service.integration.listener;
 import com.industrial.safety.notification_service.dto.CertificateEmailRequest;
 import com.industrial.safety.notification_service.dto.EmailNotificationRequest;
 import com.industrial.safety.notification_service.dto.WebAlertRequest;
+import com.industrial.safety.notification_service.integration.BaseNotificationIT;
 import com.industrial.safety.notification_service.service.EmailService;
 import com.industrial.safety.notification_service.service.WebAlertService;
 import org.junit.jupiter.api.DisplayName;
@@ -10,44 +11,33 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.concurrent.TimeUnit;
 
 import static com.industrial.safety.notification_service.config.RabbitMQConfig.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.*;
 
 /**
  * Test de integración del consumer RabbitMQ.
- *
- * Levanta un RabbitMQ real en Docker, publica mensajes via RabbitTemplate
- * y verifica que el consumer invoca los servicios correctamente.
- *
- * EmailService y WebAlertService se mockean para aislar la capa de mensajería.
+ * Hereda el contenedor RabbitMQ real de BaseNotificationIT.
+ * Publica mensajes via RabbitTemplate y verifica que el consumer invoca los servicios.
  */
-@SpringBootTest
 @Tag("integration")
-@ActiveProfiles("test")
 @DisplayName("NotificationEventConsumer — Pruebas de Integración con RabbitMQ")
-class NotificationEventConsumerIT {
+class NotificationEventConsumerIT extends BaseNotificationIT {
 
     @Autowired RabbitTemplate rabbitTemplate;
 
-    // Mockeamos los servicios para verificar que el consumer los invoca
     @MockitoBean EmailService           emailService;
     @MockitoBean WebAlertService        webAlertService;
     @MockitoBean SimpMessagingTemplate  messagingTemplate;
 
     private static final int WAIT_SECONDS = 5;
-
-    // =========================================================
-    //  Email queue → consumeEmailEvent
-    // =========================================================
 
     @Test
     @DisplayName("Mensaje en EMAIL_QUEUE → emailService.sendPurchaseEmail invocado con success=true")
@@ -59,7 +49,6 @@ class NotificationEventConsumerIT {
 
         rabbitTemplate.convertAndSend(PLATFORM_EXCHANGE, "event.email.confirmed", request);
 
-        // Esperar a que el consumer procese de forma asíncrona
         TimeUnit.SECONDS.sleep(WAIT_SECONDS);
 
         then(emailService).should(atLeastOnce()).sendPurchaseEmail(any(EmailNotificationRequest.class), anyBoolean());
@@ -80,10 +69,6 @@ class NotificationEventConsumerIT {
         then(emailService).should(atLeastOnce()).sendPurchaseEmail(any(), eq(false));
     }
 
-    // =========================================================
-    //  Certificate queue → consumeCertificateEvent
-    // =========================================================
-
     @Test
     @DisplayName("Mensaje en CERT_QUEUE → emailService.sendCertificateEmail invocado")
     void certQueue_messageConsumed_sendsCertificateEmail() throws InterruptedException {
@@ -99,10 +84,6 @@ class NotificationEventConsumerIT {
 
         then(emailService).should(atLeastOnce()).sendCertificateEmail(any(CertificateEmailRequest.class));
     }
-
-    // =========================================================
-    //  WebAlert queue → consumeWebAlertEvent
-    // =========================================================
 
     @Test
     @DisplayName("Mensaje en WS_ALERT_QUEUE → webAlertService.pushAlert invocado con success=true")

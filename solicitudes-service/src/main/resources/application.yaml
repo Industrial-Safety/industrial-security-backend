@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: solicitudes-service
+  config:
+    import: optional:configserver:http://localhost:8888
+  rabbitmq:
+    listener:
+      simple:
+        # Manual ack requerido por SolicitudEventConsumer (channel.basicAck/basicNack)
+        acknowledge-mode: manual
+
+# Integracion con Jira Service Management (ITIL - Gestion de Solicitudes).
+# Apagada por defecto. Para activarla define las variables de entorno y JIRA_ENABLED=true.
+jira:
+  enabled: ${JIRA_ENABLED:false}
+  base-url: ${JIRA_BASE_URL:https://industrialsafety.atlassian.net}
+  email: ${JIRA_EMAIL:}
+  api-token: ${JIRA_API_TOKEN:}
+  project-key: ${JIRA_PROJECT_KEY:GSI}
+  issue-type: ${JIRA_ISSUE_TYPE:Task}

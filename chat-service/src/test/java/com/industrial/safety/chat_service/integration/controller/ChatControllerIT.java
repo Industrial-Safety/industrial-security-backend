@@ -1,9 +1,9 @@
 package com.industrial.safety.chat_service.integration.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.industrial.safety.chat_service.domain.Conversation;
 import com.industrial.safety.chat_service.domain.ConversationType;
 import com.industrial.safety.chat_service.domain.Message;
+import com.industrial.safety.chat_service.integration.BaseChatIT;
 import com.industrial.safety.chat_service.repository.ConversationRepository;
 import com.industrial.safety.chat_service.repository.MessageRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -12,10 +12,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
@@ -25,21 +22,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(
-        webEnvironment = SpringBootTest.WebEnvironment.MOCK,
-        properties = {
-                "spring.cloud.config.enabled=false",
-                "eureka.client.enabled=false"
-        }
-)
-@AutoConfigureMockMvc
 @Tag("integration")
-@ActiveProfiles("test")
 @DisplayName("ChatController — Pruebas de Integración")
-class ChatControllerIT {
+class ChatControllerIT extends BaseChatIT {
 
     @Autowired MockMvc               mockMvc;
-    @Autowired ObjectMapper          objectMapper;
     @Autowired ConversationRepository conversationRepository;
     @Autowired MessageRepository     messageRepository;
 
@@ -49,6 +36,9 @@ class ChatControllerIT {
 
     @BeforeEach
     void setUp() {
+        messageRepository.deleteAll();
+        conversationRepository.deleteAll();
+
         savedConversation = conversationRepository.save(
                 Conversation.builder()
                         .id("conv-fixture-1")

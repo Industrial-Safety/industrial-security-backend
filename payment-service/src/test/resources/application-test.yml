@@ -4,25 +4,16 @@ spring:
   cloud:
     config:
       enabled: false
-  datasource:
-    url: jdbc:postgresql://localhost:5437/payment-db
-    username: admin
-    password: admin
-    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: create-drop
     show-sql: false
-  rabbitmq:
-    host: localhost
-    port: 5672
-    username: guest
-    password: guest
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:9090/realms/industrial-safety
+          # JWK URI necesaria para que el resource server arranque; tests usan jwt() post-processor
+          jwk-set-uri: http://localhost:9999/jwks
 
 aws:
   s3:

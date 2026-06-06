@@ -1,6 +1,7 @@
 package com.industrial.safety.user_service.integration.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.industrial.safety.user_service.integration.BaseUserIT;
 import com.industrial.safety.user_service.model.User;
 import com.industrial.safety.user_service.repository.UserRepository;
 import com.industrial.safety.user_service.service.KeycloakService;
@@ -11,10 +12,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -26,22 +24,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(
-        webEnvironment = SpringBootTest.WebEnvironment.MOCK,
-        properties = {
-                "spring.cloud.config.enabled=false",
-                "eureka.client.enabled=false",
-                "spring.jpa.hibernate.ddl-auto=create-drop"
-        }
-)
-@AutoConfigureMockMvc
 @Tag("integration")
-@ActiveProfiles("test")
 @DisplayName("UserController — Pruebas de Integración")
-class UserControllerIT {
+class UserControllerIT extends BaseUserIT {
 
-    @Autowired MockMvc       mockMvc;
-    @Autowired ObjectMapper  objectMapper;
+    @Autowired MockMvc        mockMvc;
+    @Autowired ObjectMapper   objectMapper;
     @Autowired UserRepository userRepository;
 
     @MockitoBean KeycloakService keycloakService;
@@ -53,6 +41,8 @@ class UserControllerIT {
 
     @BeforeEach
     void setUp() {
+        userRepository.deleteAll();
+
         given(keycloakService.createUser(any())).willReturn("kc-uuid-fixture");
         given(qrService.generateAndUploadQr(any(), any(), any(), any()))
                 .willReturn("https://s3.example.com/qr/fixture.png");
@@ -76,10 +66,6 @@ class UserControllerIT {
         userRepository.deleteAll();
     }
 
-    // =========================================================
-    //  GET /api/v1/users
-    // =========================================================
-
     @Test
     @DisplayName("GET /api/v1/users → 200 con lista de usuarios")
     void getAllUsers_returns200() throws Exception {
@@ -89,10 +75,6 @@ class UserControllerIT {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$[0].email").value("ana.perez@example.com"));
     }
-
-    // =========================================================
-    //  GET /api/v1/users/{id}
-    // =========================================================
 
     @Test
     @DisplayName("GET /api/v1/users/{id} → 200 cuando el usuario existe")
@@ -108,10 +90,6 @@ class UserControllerIT {
         mockMvc.perform(get(BASE_URL + "/{id}", "id-que-no-existe"))
                 .andExpect(status().isNotFound());
     }
-
-    // =========================================================
-    //  GET /api/v1/users/by-email
-    // =========================================================
 
     @Test
     @DisplayName("GET /api/v1/users/by-email → 200 cuando el email existe")
@@ -129,10 +107,6 @@ class UserControllerIT {
                         .param("email", "noexiste@example.com"))
                 .andExpect(status().isNotFound());
     }
-
-    // =========================================================
-    //  POST /api/v1/users  (admin create)
-    // =========================================================
 
     @Test
     @DisplayName("POST /api/v1/users → 201 con payload válido")
@@ -194,10 +168,6 @@ class UserControllerIT {
                 .andExpect(status().isBadRequest());
     }
 
-    // =========================================================
-    //  POST /api/v1/users/register  (auto-registro alumno)
-    // =========================================================
-
     @Test
     @DisplayName("POST /api/v1/users/register → 201 para nuevo alumno")
     void registerStudent_returns201() throws Exception {
@@ -242,10 +212,6 @@ class UserControllerIT {
                 .andExpect(jsonPath("$.email").value("ana.perez@example.com"));
     }
 
-    // =========================================================
-    //  PATCH /api/v1/users/{id}/toggle-status
-    // =========================================================
-
     @Test
     @DisplayName("PATCH /api/v1/users/{id}/toggle-status → 200 cambia estado")
     void toggleStatus_returns200() throws Exception {
@@ -260,10 +226,6 @@ class UserControllerIT {
         mockMvc.perform(patch(BASE_URL + "/{id}/toggle-status", "no-existe"))
                 .andExpect(status().isNotFound());
     }
-
-    // =========================================================
-    //  PUT /api/v1/users/{id}
-    // =========================================================
 
     @Test
     @DisplayName("PUT /api/v1/users/{id} → 202 con datos válidos")
@@ -304,10 +266,6 @@ class UserControllerIT {
                         .content(body))
                 .andExpect(status().isNotFound());
     }
-
-    // =========================================================
-    //  POST /api/v1/users/change-password
-    // =========================================================
 
     @Test
     @DisplayName("POST /api/v1/users/change-password → 200 cuando todo es válido")

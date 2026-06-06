@@ -3,6 +3,7 @@ package com.logistica.purchase.controller;
 import com.logistica.purchase.dto.PurchaseRequestCreateRequest;
 import com.logistica.purchase.dto.PurchaseRequestResponse;
 import com.logistica.purchase.dto.StatsResponse;
+import com.logistica.purchase.dto.UpdateStatusRequest;
 import com.logistica.purchase.service.PurchaseRequestService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -10,8 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/v1/purchase/requests")
@@ -40,8 +39,10 @@ public class PurchaseRequestController {
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public PurchaseRequestResponse updateStatus(@PathVariable Long id, @RequestBody Map<String, Object> body) {
-        return purchaseRequestService.updateStatus(id, Objects.toString(body.get("estado")));
+    public PurchaseRequestResponse updateStatus(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateStatusRequest request) {
+        return purchaseRequestService.updateStatus(id, request.estado());
     }
 
     @GetMapping("/stats")

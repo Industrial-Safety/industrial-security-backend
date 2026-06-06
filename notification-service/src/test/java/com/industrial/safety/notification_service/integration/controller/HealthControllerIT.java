@@ -1,13 +1,11 @@
 package com.industrial.safety.notification_service.integration.controller;
 
+import com.industrial.safety.notification_service.integration.BaseNotificationIT;
 import com.industrial.safety.notification_service.service.EmailService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -18,28 +16,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(
-        webEnvironment = SpringBootTest.WebEnvironment.MOCK,
-        properties = {
-                "notification.diagnostics.enabled=true",
-                "spring.mail.host=smtp.test.example.com"
-        }
-)
-@AutoConfigureMockMvc
 @Tag("integration")
-@ActiveProfiles("test")
 @DisplayName("HealthController — Pruebas de Integración")
-class HealthControllerIT {
+class HealthControllerIT extends BaseNotificationIT {
 
     @Autowired MockMvc mockMvc;
 
     @MockitoBean EmailService emailService;
 
     private static final String BASE_URL = "/api/v1/notifications/diagnostics";
-
-    // =========================================================
-    //  GET /api/v1/notifications/diagnostics/mail-config
-    // =========================================================
 
     @Test
     @DisplayName("GET /diagnostics/mail-config → 200 con configuración de correo")
@@ -50,10 +35,6 @@ class HealthControllerIT {
                 .andExpect(jsonPath("$.configured").value(true))
                 .andExpect(jsonPath("$.host").value("smtp.test.example.com"));
     }
-
-    // =========================================================
-    //  GET /api/v1/notifications/diagnostics/test-email
-    // =========================================================
 
     @Test
     @DisplayName("GET /diagnostics/test-email → 200 encola email de prueba")

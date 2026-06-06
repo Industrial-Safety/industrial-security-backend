@@ -1,52 +1,36 @@
 package com.industrial.safety.exam_service.integration.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.industrial.safety.exam_service.integration.BaseExamIT;
 import com.industrial.safety.exam_service.model.Exam;
 import com.industrial.safety.exam_service.model.Question;
 import com.industrial.safety.exam_service.parser.ExamXlsxParser;
 import com.industrial.safety.exam_service.pdf.CertificatePdfGenerator;
 import com.industrial.safety.exam_service.repository.ExamRepository;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-
-import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(
-        webEnvironment = SpringBootTest.WebEnvironment.MOCK,
-        properties = {
-                "spring.cloud.config.enabled=false",
-                "eureka.client.enabled=false",
-                "spring.jpa.hibernate.ddl-auto=create-drop",
-                "spring.security.oauth2.resourceserver.jwt.jwk-set-uri=http://localhost:9999/jwks"
-        }
-)
-@AutoConfigureMockMvc
 @Tag("integration")
-@ActiveProfiles("test")
 @DisplayName("ExamController — Pruebas de Integración")
-class ExamControllerIT {
+class ExamControllerIT extends BaseExamIT {
 
     @Autowired MockMvc       mockMvc;
-    @Autowired ObjectMapper  objectMapper;
     @Autowired ExamRepository examRepository;
 
     @MockitoBean ExamXlsxParser         xlsxParser;
@@ -59,6 +43,8 @@ class ExamControllerIT {
 
     @BeforeEach
     void setUp() {
+        examRepository.deleteAll();
+
         when(pdfGenerator.generateAndUpload(any(), any(), any(), any(), any(), any()))
                 .thenReturn("certificates/test/student.pdf");
 
