@@ -111,7 +111,7 @@ jobs:
       - name: Ejecutar pruebas de integración — ${{ matrix.service }}
         working-directory: ${{ matrix.service }}
         run: |
-          mvn failsafe:integration-test failsafe:verify \
+          mvn test-compile failsafe:integration-test failsafe:verify \
             -Dspring.profiles.active=test \
             -Dgroups="integration" \
             --no-transfer-progress
