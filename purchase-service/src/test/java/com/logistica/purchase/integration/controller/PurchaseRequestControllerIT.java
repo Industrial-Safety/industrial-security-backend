@@ -1,8 +1,11 @@
 package com.logistica.purchase.integration.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.logistica.purchase.dto.SolicitudCreatedEvent;
 import com.logistica.purchase.entity.PurchaseRequest;
+import com.logistica.purchase.entity.PurchaseRequestStatus;
+import com.logistica.purchase.integration.BasePurchaseIT;
 import com.logistica.purchase.messaging.EppEventPublisher;
+import com.logistica.purchase.messaging.SolicitudEventPublisher;
 import com.logistica.purchase.repository.EppDeliveryRepository;
 import com.logistica.purchase.repository.PurchaseRequestRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -11,41 +14,30 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDate;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.then;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(
-        webEnvironment = SpringBootTest.WebEnvironment.MOCK,
-        properties = {
-                "spring.cloud.config.enabled=false",
-                "eureka.client.enabled=false",
-                "spring.jpa.hibernate.ddl-auto=create-drop"
-        }
-)
-@AutoConfigureMockMvc
 @Tag("integration")
-@ActiveProfiles("test")
 @DisplayName("PurchaseRequestController — Pruebas de Integración")
-class PurchaseRequestControllerIT {
+class PurchaseRequestControllerIT extends BasePurchaseIT {
 
     @Autowired MockMvc                   mockMvc;
-    @Autowired ObjectMapper              objectMapper;
     @Autowired PurchaseRequestRepository repository;
     @Autowired EppDeliveryRepository     deliveryRepository;
 
-    @MockitoBean EppEventPublisher eventPublisher;
-    @MockitoBean RestTemplate      restTemplate;
+    @MockitoBean EppEventPublisher       eventPublisher;
+    @MockitoBean SolicitudEventPublisher solicitudEventPublisher;
+    @MockitoBean RestTemplate            restTemplate;
 
     private static final String BASE_URL = "/api/v1/purchase/requests";
 
@@ -64,7 +56,7 @@ class PurchaseRequestControllerIT {
                 .proveedor("Proveedor S.A.")
                 .costoEstimado(1000.0)
                 .justificacion("Reposición trimestral")
-                .estado("PENDIENTE")
+                .estado(PurchaseRequestStatus.PENDIENTE)
                 .build());
     }
 
@@ -113,7 +105,7 @@ class PurchaseRequestControllerIT {
     // =========================================================
 
     @Test
-    @DisplayName("POST /requests → 201 con payload válido")
+    @DisplayName("POST /requests → 201 con payload válido y publica evento de solicitud")
     void create_returns201() throws Exception {
         String body = """
                 {
@@ -133,6 +125,8 @@ class PurchaseRequestControllerIT {
                 .andExpect(jsonPath("$.estado").value("PENDIENTE"))
                 .andExpect(jsonPath("$.categoria").value("Guante"))
                 .andExpect(jsonPath("$.codigoSolicitud").isNotEmpty());
+
+        then(solicitudEventPublisher).should().publishSolicitud(any(SolicitudCreatedEvent.class));
     }
 
     @Test
@@ -244,7 +238,7 @@ class PurchaseRequestControllerIT {
     @Test
     @DisplayName("GET /requests/inventory → 200 solo muestra las aprobadas")
     void getApproved_returnsOnlyApproved() throws Exception {
-        savedRequest.setEstado("APROBADO");
+        savedRequest.setEstado(PurchaseRequestStatus.APROBADO);
         repository.save(savedRequest);
 
         mockMvc.perform(get(BASE_URL + "/inventory"))

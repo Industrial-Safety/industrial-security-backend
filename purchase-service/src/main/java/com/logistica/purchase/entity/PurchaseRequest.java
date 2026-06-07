@@ -7,14 +7,17 @@ import java.time.LocalDate;
 
 @Entity
 @Table(name = "purchase_requests")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class PurchaseRequest {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     private String codigoSolicitud;
@@ -32,5 +35,6 @@ public class PurchaseRequest {
     @Column(length = 1000)
     private String justificacion;
 
-    private String estado;
+    @Enumerated(EnumType.STRING)
+    private PurchaseRequestStatus estado;
 }

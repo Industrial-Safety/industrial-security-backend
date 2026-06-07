@@ -15,9 +15,18 @@ public class RabbitMQConfig {
     public static final String QUEUE = "epp.delivery.queue";
     public static final String ROUTING_KEY = "epp.delivered";
 
+    // Exchange de plataforma (compartido) para eventos de solicitudes hacia solicitudes-service.
+    public static final String PLATFORM_EXCHANGE = "industrial.safety.topic";
+    public static final String SOLICITUD_SERVICIO_ROUTING_KEY = "event.solicitud.servicio";
+
     @Bean
     public DirectExchange eppExchange() {
         return new DirectExchange(EXCHANGE);
+    }
+
+    @Bean
+    public TopicExchange platformExchange() {
+        return new TopicExchange(PLATFORM_EXCHANGE, true, false);
     }
 
     @Bean
