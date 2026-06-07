@@ -1,14 +1,8 @@
 package com.industrial.safety.exam_service.pdf;
 
-import com.lowagie.text.Document;
-import com.lowagie.text.Element;
-import com.lowagie.text.Font;
-import com.lowagie.text.FontFactory;
-import com.lowagie.text.Image;
-import com.lowagie.text.Paragraph;
-import com.lowagie.text.Rectangle;
-import com.lowagie.text.pdf.PdfContentByte;
-import com.lowagie.text.pdf.PdfWriter;
+import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
+import com.openhtmltopdf.outputdevice.helper.BaseRendererBuilder.FontStyle;
+import com.openhtmltopdf.svgsupport.BatikSVGDrawer;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
@@ -23,13 +17,15 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 
-import java.awt.Color;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 @Slf4j
 @Component
@@ -41,7 +37,7 @@ public class CertificatePdfGenerator {
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter
             .ofPattern("dd 'de' MMMM 'de' yyyy")
             .withZone(ZoneId.systemDefault())
-            .withLocale(new java.util.Locale("es", "ES"));
+            .withLocale(new Locale("es", "ES"));
 
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
@@ -54,7 +50,7 @@ public class CertificatePdfGenerator {
     public String generateAndUpload(String studentId, Long examId,
                                     String studentName, String courseName,
                                     String instructorName, Integer score) {
-        byte[] pdf = render(studentName, courseName, instructorName, score);
+        byte[] pdf = render(studentId, examId, studentName, courseName, instructorName, score);
         String key = S3_KEY_PREFIX + examId + "/" + studentId + ".pdf";
 
         PutObjectRequest put = PutObjectRequest.builder()
@@ -103,79 +99,64 @@ public class CertificatePdfGenerator {
         return presigned.url().toExternalForm();
     }
 
-    private byte[] render(String studentName, String courseName,
+    private byte[] render(String studentId, Long examId,
+                          String studentName, String courseName,
                           String instructorName, Integer score) {
-        // Landscape A4: 842 x 595 pt  (iText origin = bottom-left)
-        try (ByteArrayOutputStream out = new ByteArrayOutputStream();
-             Document document = new Document(new Rectangle(842, 595), 0, 0, 0, 0)) {
+        try {
+            String html = loadTemplate()
+                    .replace("{{STUDENT_NAME}}",      escapeHtml(studentName))
+                    .replace("{{COURSE_NAME}}",        escapeHtml(courseName))
+                    .replace("{{INSTRUCTOR_NAME}}",    escapeHtml(instructorName))
+                    .replace("{{SCORE}}",              score + "%")
+                    .replace("{{ISSUE_DATE}}",         DATE_FMT.format(Instant.now()))
+                    .replace("{{VERIFICATION_CODE}}", buildCode(studentId, examId));
 
-            PdfWriter writer = PdfWriter.getInstance(document, out);
-            document.open();
+            ClassLoader cl = getClass().getClassLoader();
+            try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                PdfRendererBuilder builder = new PdfRendererBuilder();
+                builder.useFastMode();
+                builder.useSVGDrawer(new BatikSVGDrawer());
 
-            PdfContentByte cb = writer.getDirectContent();
+                // Fuentes Fraunces (serif — nombre del alumno y curso)
+                builder.useFont(() -> cl.getResourceAsStream("fonts/Fraunces-Regular.ttf"),  "Fraunces", 400, FontStyle.NORMAL, true);
+                builder.useFont(() -> cl.getResourceAsStream("fonts/Fraunces-SemiBold.ttf"), "Fraunces", 600, FontStyle.NORMAL, true);
+                builder.useFont(() -> cl.getResourceAsStream("fonts/Fraunces-Bold.ttf"),     "Fraunces", 700, FontStyle.NORMAL, true);
 
-            // --- Background image ---
-            try {
-                Image bg = Image.getInstance(
-                        getClass().getClassLoader().getResource("certificate.png"));
-                bg.setAbsolutePosition(0, 0);
-                bg.scaleAbsolute(842, 595);
-                cb.addImage(bg);
-            } catch (Exception e) {
-                log.warn("certificate.png not found in classpath, using plain background");
-                // Fallback: cream background
-                cb.setColorFill(new Color(254, 252, 245));
-                cb.rectangle(0, 0, 842, 595);
-                cb.fill();
+                // Fuentes Sora (sans-serif — todo el texto de cuerpo y etiquetas)
+                builder.useFont(() -> cl.getResourceAsStream("fonts/Sora-Regular.ttf"),     "Sora", 400, FontStyle.NORMAL, true);
+                builder.useFont(() -> cl.getResourceAsStream("fonts/Sora-SemiBold.ttf"),    "Sora", 600, FontStyle.NORMAL, true);
+                builder.useFont(() -> cl.getResourceAsStream("fonts/Sora-Bold.ttf"),        "Sora", 700, FontStyle.NORMAL, true);
+
+                builder.withHtmlContent(html, null);
+                builder.toStream(out);
+                builder.run();
+                return out.toByteArray();
             }
-
-            // Helper: centre-aligned text at absolute Y (iText bottom-up)
-            // The template's name slot is visually ~58% from the top → y ≈ 595*0.42 = 250 pt from bottom
-            // Calibrated by measuring the template image zones:
-            //   Title "CERTIFICATE OF COMPLETION"  → y ≈ 435
-            //   "THIS IS TO CERTIFY THAT"          → y ≈ 330
-            //   Name (script)                      → y ≈ 265
-            //   "HAS SUCCESSFULLY COMPLETED THE"   → y ≈ 215
-            //   Course name                        → y ≈ 185
-            //   Date / score line                  → y ≈ 152
-            //   Instructor (right)                 → y ≈  98
-
-            Font nameFont  = FontFactory.getFont(FontFactory.TIMES_BOLDITALIC, 38, new Color(160, 110, 15));
-            Font courseFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD,  16, new Color(40,  40,  40));
-            Font detailFont = FontFactory.getFont(FontFactory.HELVETICA,       10, new Color(70,  70,  70));
-            Font instrFont  = FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE,11, new Color(55,  55,  55));
-
-            // Student name — most prominent element
-            com.lowagie.text.pdf.ColumnText.showTextAligned(
-                    cb, Element.ALIGN_CENTER,
-                    new com.lowagie.text.Phrase(studentName, nameFont),
-                    421, 265, 0);
-
-            // Course name
-            com.lowagie.text.pdf.ColumnText.showTextAligned(
-                    cb, Element.ALIGN_CENTER,
-                    new com.lowagie.text.Phrase(courseName.toUpperCase(), courseFont),
-                    421, 185, 0);
-
-            // Date + score line
-            String detail = "Completado con distinción el " + DATE_FMT.format(Instant.now())
-                           + "   ·   Puntaje: " + score + "%";
-            com.lowagie.text.pdf.ColumnText.showTextAligned(
-                    cb, Element.ALIGN_CENTER,
-                    new com.lowagie.text.Phrase(detail, detailFont),
-                    421, 152, 0);
-
-            // Instructor — right-aligned, bottom section
-            com.lowagie.text.pdf.ColumnText.showTextAligned(
-                    cb, Element.ALIGN_CENTER,
-                    new com.lowagie.text.Phrase(instructorName + "\n(Instructor del Curso)", instrFont),
-                    630, 98, 0);
-
-            document.close();
-            return out.toByteArray();
         } catch (IOException e) {
             throw new RuntimeException("Error generando PDF del certificado", e);
         }
+    }
+
+    private String loadTemplate() throws IOException {
+        try (InputStream is = getClass().getClassLoader()
+                .getResourceAsStream("templates/certificate.html")) {
+            if (is == null) {
+                throw new IllegalStateException("templates/certificate.html no encontrado en el classpath");
+            }
+            return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+        }
+    }
+
+    private String escapeHtml(String text) {
+        if (text == null) return "";
+        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    }
+
+    private String buildCode(String studentId, Long examId) {
+        String suffix = studentId.length() >= 4
+                ? studentId.substring(0, 4).toUpperCase()
+                : studentId.toUpperCase();
+        return "ISA-" + String.format("%04d", examId) + "-" + suffix;
     }
 
     public static class S3UnavailableException extends RuntimeException {

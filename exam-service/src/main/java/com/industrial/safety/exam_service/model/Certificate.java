@@ -8,14 +8,17 @@ import java.time.Instant;
 @Entity
 @Table(name = "certificates",
        uniqueConstraints = @UniqueConstraint(columnNames = {"student_id", "exam_id"}))
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Certificate {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @Column(name = "student_id", nullable = false)

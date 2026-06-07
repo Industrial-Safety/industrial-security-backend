@@ -5,19 +5,22 @@ import lombok.*;
 
 @Entity
 @Table(name = "questions")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(exclude = "exam")
 public class Question {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "exam_id", nullable = false)
-    @ToString.Exclude
     private Exam exam;
 
     @Column(nullable = false, columnDefinition = "TEXT")

@@ -10,14 +10,17 @@ import java.util.Map;
 
 @Entity
 @Table(name = "student_attempts")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class StudentAttempt {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @Column(nullable = false)
@@ -32,7 +35,6 @@ public class StudentAttempt {
     @Column(nullable = false)
     private String studentEmail;
 
-    // {"questionId": "A", "questionId2": "C", ...}
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb", nullable = false)
     private Map<String, String> answers;

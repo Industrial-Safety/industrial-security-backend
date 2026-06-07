@@ -1,0 +1,44 @@
+server:
+  port: 8075
+
+spring:
+  application:
+    name: solicitudes-service
+  threads:
+    virtual:
+      enabled: true
+  cloud:
+    config:
+      enabled: false
+  datasource:
+    url: jdbc:postgresql://db-industrial-safety.c0dee0yuo11h.us-east-1.rds.amazonaws.com:5432/solicitudes-db
+    username: postgres
+    password: ${SPRING_DATASOURCE_PASSWORD:admin}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:guest}
+    password: ${SPRING_RABBITMQ_PASSWORD:guest}
+    ssl:
+      enabled: ${SPRING_RABBITMQ_SSL_ENABLED:false}
+    listener:
+      simple:
+        # Manual ack requerido por SolicitudEventConsumer (channel.basicAck/basicNack)
+        acknowledge-mode: manual
+
+eureka:
+  client:
+    enabled: false
+
+# Integracion con Jira Service Management (ITIL - Gestion de Solicitudes).
+jira:
+  enabled: ${JIRA_ENABLED:true}
+  base-url: ${JIRA_BASE_URL:https://industrialsafety.atlassian.net}
+  email: ${JIRA_EMAIL:ricardoismael777@gmail.com}
+  api-token: ${JIRA_API_TOKEN:}
+  project-key: ${JIRA_PROJECT_KEY:SI}
+  issue-type: ${JIRA_ISSUE_TYPE:Task}

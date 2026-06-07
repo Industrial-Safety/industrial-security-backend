@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<style>
+/* ── Página A4 apaisada ──────────────────────────────────── */
+@page {
+  size: 297mm 210mm;
+  margin: 0;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 297mm;
+  height: 210mm;
+  background: #ffffff;
+  font-family: "Sora", Arial, Helvetica, sans-serif;
+  color: #1c1917;
+}
+
+/* ── Contenedor principal ───────────────────────────────── */
+.cert {
+  position: relative;
+  width: 297mm;
+  height: 210mm;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+/* barra de color lateral */
+.accent-bar {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 10px;
+  background: linear-gradient(180deg, #f97316 0%, #fb923c 28%, #0ea5e9 100%);
+}
+
+/* marco interior delgado */
+.frame {
+  position: absolute;
+  top: 22px; right: 26px; bottom: 22px; left: 36px;
+  border: 1px solid #e7e5e4;
+}
+.frame::after {
+  content: "";
+  position: absolute;
+  top: 6px; right: 6px; bottom: 6px; left: 6px;
+  border: 1px solid #f2f1f0;
+}
+
+/* esquinas decorativas */
+.corner { position: absolute; width: 34px; height: 34px; }
+.corner::before, .corner::after { content: ""; position: absolute; background: #f97316; }
+.corner::before { width: 34px; height: 2px; }
+.corner::after  { width: 2px; height: 34px; }
+.corner.cyan::before, .corner.cyan::after { background: #0ea5e9; }
+
+.corner.tl { top: 32px; left: 46px; }
+.corner.tl::before { top: 0; left: 0; }
+.corner.tl::after  { top: 0; left: 0; }
+
+.corner.tr { top: 32px; right: 36px; }
+.corner.tr::before { top: 0; right: 0; }
+.corner.tr::after  { top: 0; right: 0; }
+
+.corner.bl { bottom: 32px; left: 46px; }
+.corner.bl::before { bottom: 0; left: 0; }
+.corner.bl::after  { bottom: 0; left: 0; }
+
+.corner.br { bottom: 32px; right: 36px; }
+.corner.br::before { bottom: 0; right: 0; }
+.corner.br::after  { bottom: 0; right: 0; }
+
+/* envoltorio de contenido */
+.inner {
+  position: absolute;
+  top: 22px; right: 26px; bottom: 22px; left: 36px;
+  padding: 34px 46px 28px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── ENCABEZADO ─────────────────────────────────────────── */
+header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.brand { display: flex; align-items: center; }
+
+.logo {
+  width: 50px; height: 50px;
+  border-radius: 11px;
+  background: linear-gradient(145deg, #f97316, #ea580c);
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  margin-right: 14px;
+}
+.logo span {
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 600; font-size: 22px;
+  color: #ffffff; letter-spacing: 0.5px;
+}
+.logo::after {
+  content: "";
+  position: absolute; right: -3px; bottom: -3px;
+  width: 13px; height: 13px;
+  border-radius: 3px;
+  background: #0ea5e9;
+  border: 2px solid #ffffff;
+}
+
+.brand-name {
+  font-size: 17px; font-weight: bold;
+  letter-spacing: 0.2px; line-height: 1.1; margin-bottom: 4px;
+}
+.brand-tag {
+  font-size: 9px; font-weight: bold;
+  letter-spacing: 2px; text-transform: uppercase; color: #a8a29e;
+}
+
+.header-label { text-align: right; }
+.kicker {
+  font-size: 10px; font-weight: bold;
+  letter-spacing: 3px; text-transform: uppercase; color: #f97316;
+}
+.kicker b { color: #0ea5e9; }
+.rule { margin: 7px 0 0 auto; width: 110px; height: 1px; background: #e7e5e4; }
+.sub-label {
+  margin-top: 5px; font-size: 8px;
+  letter-spacing: 2px; text-transform: uppercase; color: #a8a29e;
+}
+
+/* ── CUERPO ─────────────────────────────────────────────── */
+.body {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center;
+}
+
+.eyebrow {
+  font-size: 10px; font-weight: bold;
+  letter-spacing: 4px; text-transform: uppercase; color: #57534e;
+}
+.dot {
+  display: inline-block; width: 4px; height: 4px;
+  border-radius: 50%; background: #f97316;
+  vertical-align: middle; margin: 0 10px 2px;
+}
+
+.student-name {
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 600; font-size: 46px;
+  line-height: 1.1; letter-spacing: 0.5px;
+  margin-top: 12px; color: #1c1917;
+}
+
+.name-underline {
+  margin: 10px auto 0;
+  width: 260px; height: 3px; border-radius: 3px;
+  background: linear-gradient(90deg, #f97316, #0ea5e9);
+}
+
+.statement {
+  margin-top: 18px; max-width: 580px;
+  font-size: 14px; line-height: 1.7; color: #57534e;
+}
+.statement .course-name {
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 600; font-size: 16px; color: #1c1917;
+}
+.statement .score-val { font-weight: bold; color: #f97316; }
+
+/* ── PIE ────────────────────────────────────────────────── */
+footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.foot-col { display: flex; flex-direction: column; flex: 1; }
+.foot-col.center { flex: 0 0 auto; margin: 0 28px; }
+.foot-col.right  { align-items: flex-end; text-align: right; }
+
+.sign-area  { height: 44px; margin-bottom: 6px; }
+.sign-line  { width: 190px; height: 1px; background: #1c1917; opacity: 0.5; }
+
+.foot-name {
+  margin-top: 8px; font-size: 13px;
+  font-weight: bold; color: #1c1917;
+}
+.foot-role {
+  margin-top: 2px; font-size: 9px;
+  letter-spacing: 1.5px; text-transform: uppercase; color: #a8a29e;
+}
+
+.seal-wrap { display: flex; flex-direction: column; align-items: center; }
+
+.seal-date { text-align: center; margin-top: 4px; }
+.seal-date .lbl {
+  font-size: 8px; letter-spacing: 2px;
+  text-transform: uppercase; color: #a8a29e;
+}
+.seal-date .val {
+  margin-top: 2px; font-size: 11px;
+  font-weight: bold; color: #1c1917;
+}
+
+.verif .lbl {
+  font-size: 8px; letter-spacing: 2px;
+  text-transform: uppercase; color: #a8a29e;
+}
+.verif .code {
+  margin-top: 4px;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 12px; font-weight: bold;
+  letter-spacing: 1.5px; color: #1c1917;
+}
+.qr-box {
+  margin-top: 7px;
+  width: 46px; height: 46px;
+  border: 1px solid #e7e5e4;
+  border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+}
+</style>
+</head>
+<body>
+<div class="cert">
+  <div class="accent-bar"></div>
+  <div class="frame"></div>
+
+  <div class="corner tl"></div>
+  <div class="corner tr cyan"></div>
+  <div class="corner bl cyan"></div>
+  <div class="corner br"></div>
+
+  <div class="inner">
+
+    <!-- ENCABEZADO -->
+    <header>
+      <div class="brand">
+        <div class="logo"><span>IS</span></div>
+        <div>
+          <div class="brand-name">Industrial Safety Academy</div>
+          <div class="brand-tag">Formación en Seguridad Industrial</div>
+        </div>
+      </div>
+      <div class="header-label">
+        <div class="kicker">Certificado de <b>Finalización</b></div>
+        <div class="rule"></div>
+        <div class="sub-label">Certificate of Completion</div>
+      </div>
+    </header>
+
+    <!-- CUERPO -->
+    <div class="body">
+      <div class="eyebrow">Se certifica que <span class="dot"></span> Otorgado a</div>
+      <div class="student-name">{{STUDENT_NAME}}</div>
+      <div class="name-underline"></div>
+      <p class="statement">
+        ha completado satisfactoriamente el curso
+        <span class="course-name">{{COURSE_NAME}}</span>,
+        cumpliendo con todos los requisitos de evaluación
+        con una calificación de <span class="score-val">{{SCORE}}</span>.
+      </p>
+    </div>
+
+    <!-- PIE -->
+    <footer>
+
+      <!-- Firma del instructor -->
+      <div class="foot-col">
+        <div class="sign-area"></div>
+        <div class="sign-line"></div>
+        <div class="foot-name">{{INSTRUCTOR_NAME}}</div>
+        <div class="foot-role">Instructor del curso</div>
+      </div>
+
+      <!-- Sello + fecha -->
+      <div class="foot-col center">
+        <div class="seal-wrap">
+          <svg xmlns="http://www.w3.org/2000/svg"
+               xmlns:xlink="http://www.w3.org/1999/xlink"
+               viewBox="0 0 100 100" width="96" height="96">
+            <defs>
+              <path id="arc1" d="M50,50 m-40,0 a40,40 0 1,1 80,0 a40,40 0 1,1 -80,0"/>
+              <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#f97316"/>
+                <stop offset="1" stop-color="#0ea5e9"/>
+              </linearGradient>
+            </defs>
+            <circle cx="50" cy="50" r="48" fill="none" stroke="url(#ringGrad)" stroke-width="1.5"/>
+            <circle cx="50" cy="50" r="39" fill="none" stroke="#e7e5e4" stroke-width="0.8"/>
+            <text font-family="Arial" font-size="7" font-weight="bold" fill="#57534e">
+              <textPath xlink:href="#arc1" startOffset="3%">
+                INDUSTRIAL SAFETY ACADEMY • VERIFICADO •
+              </textPath>
+            </text>
+            <circle cx="50" cy="50" r="30" fill="#fff7ed"/>
+            <circle cx="50" cy="50" r="30" fill="none" stroke="#f97316" stroke-width="1"/>
+            <text x="50" y="55" text-anchor="middle"
+                  font-family="Georgia,serif" font-size="16" font-weight="bold" fill="#1c1917">ISA</text>
+            <circle cx="67" cy="67" r="9" fill="#0ea5e9"/>
+            <path d="M63 67.5 l3 3 l5.5-5" fill="none" stroke="#ffffff"
+                  stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div class="seal-date">
+            <div class="lbl">Fecha de emisión</div>
+            <div class="val">{{ISSUE_DATE}}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Código de verificación -->
+      <div class="foot-col right verif">
+        <div class="lbl">Código de verificación</div>
+        <div class="code">{{VERIFICATION_CODE}}</div>
+        <div class="qr-box">
+          <svg viewBox="0 0 36 36" fill="#1c1917" width="28" height="28">
+            <rect x="2"  y="2"  width="10" height="10" fill="none" stroke="#1c1917" stroke-width="2.4"/>
+            <rect x="6"  y="6"  width="2.6" height="2.6"/>
+            <rect x="24" y="2"  width="10" height="10" fill="none" stroke="#1c1917" stroke-width="2.4"/>
+            <rect x="28" y="6"  width="2.6" height="2.6"/>
+            <rect x="2"  y="24" width="10" height="10" fill="none" stroke="#1c1917" stroke-width="2.4"/>
+            <rect x="6"  y="28" width="2.6" height="2.6"/>
+            <rect x="16" y="2"  width="2.6" height="6"/>
+            <rect x="16" y="11" width="2.6" height="6"/>
+            <rect x="24" y="16" width="2.6" height="2.6"/>
+            <rect x="30" y="16" width="3"   height="2.6"/>
+            <rect x="16" y="24" width="2.6" height="6"/>
+            <rect x="22" y="22" width="2.6" height="2.6"/>
+            <rect x="28" y="24" width="6"   height="2.6"/>
+            <rect x="31" y="28" width="2.6" height="6"/>
+            <rect x="22" y="30" width="6"   height="2.6"/>
+            <rect x="2"  y="16" width="6"   height="2.6"/>
+          </svg>
+        </div>
+      </div>
+
+    </footer>
+  </div>
+</div>
+</body>
+</html>
