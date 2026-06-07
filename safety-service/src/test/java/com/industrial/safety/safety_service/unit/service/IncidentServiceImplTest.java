@@ -6,6 +6,8 @@ import com.industrial.safety.safety_service.dto.request.ResolveAppealRequest;
 import com.industrial.safety.safety_service.dto.request.ReviewIncidentRequest;
 import com.industrial.safety.safety_service.dto.response.IncidentResponse;
 import com.industrial.safety.safety_service.dto.response.WorkerComplianceScoreResponse;
+import com.industrial.safety.safety_service.mapper.SafetyMapper;
+import com.industrial.safety.safety_service.mapper.SafetyMapperImpl;
 import com.industrial.safety.safety_service.messaging.SafetyAlertPublisher;
 import com.industrial.safety.safety_service.model.Incident;
 import com.industrial.safety.safety_service.model.enums.AppealStatus;
@@ -22,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -44,6 +47,7 @@ class IncidentServiceImplTest {
     @Mock PpePointsCalculator    pointsCalculator;
     @Mock ComplianceScoreService complianceScoreService;
     @Mock SafetyAlertPublisher   alertPublisher;
+    @Spy  SafetyMapper           mapper = new SafetyMapperImpl();
 
     @InjectMocks IncidentServiceImpl service;
 

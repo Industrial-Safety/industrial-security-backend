@@ -5,6 +5,7 @@ import com.industrial.safety.safety_service.dto.request.CreateIncidentRequest;
 import com.industrial.safety.safety_service.dto.request.ResolveAppealRequest;
 import com.industrial.safety.safety_service.dto.request.ReviewIncidentRequest;
 import com.industrial.safety.safety_service.dto.response.IncidentResponse;
+import com.industrial.safety.safety_service.mapper.SafetyMapper;
 import com.industrial.safety.safety_service.messaging.SafetyAlertPublisher;
 import com.industrial.safety.safety_service.model.Incident;
 import com.industrial.safety.safety_service.model.enums.AppealStatus;
@@ -14,11 +15,11 @@ import com.industrial.safety.safety_service.service.ComplianceScoreService;
 import com.industrial.safety.safety_service.service.IncidentService;
 import com.industrial.safety.safety_service.service.PpePointsCalculator;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -32,6 +33,7 @@ public class IncidentServiceImpl implements IncidentService {
     private final PpePointsCalculator pointsCalculator;
     private final ComplianceScoreService complianceScoreService;
     private final SafetyAlertPublisher alertPublisher;
+    private final SafetyMapper mapper;
 
     @Override
     @Transactional
@@ -45,7 +47,7 @@ public class IncidentServiceImpl implements IncidentService {
                 .status(IncidentStatus.PENDING)
                 .build();
 
-        return toResponse(repository.save(incident));
+        return mapper.toResponse(repository.save(incident));
     }
 
     @Override
@@ -84,36 +86,39 @@ public class IncidentServiceImpl implements IncidentService {
             }
         }
 
-        return toResponse(repository.save(incident));
+        return mapper.toResponse(repository.save(incident));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<IncidentResponse> list(IncidentStatus status, String cameraKey, Pageable pageable) {
         if (status != null && cameraKey != null) {
             return repository.findByCameraKeyAndStatus(cameraKey, status, pageable)
-                    .map(this::toResponse);
+                    .map(mapper::toResponse);
         }
         if (status != null) {
             return repository.findByStatus(status, pageable)
-                    .map(this::toResponse);
+                    .map(mapper::toResponse);
         }
         if (cameraKey != null) {
             return repository.findByCameraKey(cameraKey, pageable)
-                    .map(this::toResponse);
+                    .map(mapper::toResponse);
         }
-        return repository.findAll(pageable).map(this::toResponse);
+        return repository.findAll(pageable).map(mapper::toResponse);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public IncidentResponse findById(String id) {
         return repository.findById(id)
-                .map(this::toResponse)
+                .map(mapper::toResponse)
                 .orElseThrow(() -> new EntityNotFoundException("Incidente no encontrado: " + id));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<IncidentResponse> listByWorker(String workerId, Pageable pageable) {
-        return repository.findByWorkerId(workerId, pageable).map(this::toResponse);
+        return repository.findByWorkerId(workerId, pageable).map(mapper::toResponse);
     }
 
     @Override
@@ -139,7 +144,7 @@ public class IncidentServiceImpl implements IncidentService {
         incident.setAppealResolvedAt(null);
         incident.setAppealResolutionNotes(null);
 
-        return toResponse(repository.save(incident));
+        return mapper.toResponse(repository.save(incident));
     }
 
     @Override
@@ -187,19 +192,20 @@ public class IncidentServiceImpl implements IncidentService {
         alertPublisher.publishAppealResolved(workerId, approved,
                 approved ? deducted : 0, newScore);
 
-        return toResponse(saved);
+        return mapper.toResponse(saved);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<IncidentResponse> listAppeals(String reviewerId, boolean onlyPending, Pageable pageable) {
         if (onlyPending) {
             return repository
                     .findByReviewedByAndAppealStatus(reviewerId, AppealStatus.PENDING, pageable)
-                    .map(this::toResponse);
+                    .map(mapper::toResponse);
         }
         return repository
                 .findByReviewedByAndAppealStatusIsNotNull(reviewerId, pageable)
-                .map(this::toResponse);
+                .map(mapper::toResponse);
     }
 
     private List<String> splitViolations(String csv) {
@@ -207,28 +213,5 @@ public class IncidentServiceImpl implements IncidentService {
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .toList();
-    }
-
-    private IncidentResponse toResponse(Incident i) {
-        return IncidentResponse.builder()
-                .id(i.getId())
-                .cameraKey(i.getCameraKey())
-                .violationTypes(Arrays.asList(i.getViolationTypes().split(",")))
-                .evidenceUrl(i.getEvidenceUrl())
-                .confidence(i.getConfidence())
-                .status(i.getStatus())
-                .detectedAt(i.getDetectedAt())
-                .createdAt(i.getCreatedAt())
-                .reviewedBy(i.getReviewedBy())
-                .reviewedAt(i.getReviewedAt())
-                .reviewNotes(i.getReviewNotes())
-                .workerId(i.getWorkerId())
-                .pointsDeducted(i.getPointsDeducted())
-                .appealStatus(i.getAppealStatus())
-                .appealReason(i.getAppealReason())
-                .appealedAt(i.getAppealedAt())
-                .appealResolvedAt(i.getAppealResolvedAt())
-                .appealResolutionNotes(i.getAppealResolutionNotes())
-                .build();
     }
 }
