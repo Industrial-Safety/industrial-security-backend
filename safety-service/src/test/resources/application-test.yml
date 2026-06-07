@@ -4,20 +4,13 @@ spring:
   cloud:
     config:
       enabled: false
-  datasource:
-    url: jdbc:postgresql://localhost:5440/safety-db
-    username: admin
-    password: admin
-    driver-class-name: org.postgresql.Driver
+    aws:
+      parameterstore:
+        enabled: false
   jpa:
     hibernate:
       ddl-auto: create-drop
     show-sql: false
-  rabbitmq:
-    host: localhost
-    port: 5672
-    username: guest
-    password: guest
 
 eureka:
   client:
