@@ -14,31 +14,84 @@ permissions:
 env:
   JAVA_VERSION: "25"
   MAVEN_OPTS: "-Xmx2048m"
-  # Ryuk (reaper de Testcontainers) falla al descargarse por rate-limit de Docker Hub
-  # en los runners. En CI efímero no se necesita: el runner se destruye al terminar.
   TESTCONTAINERS_RYUK_DISABLED: "true"
 
 jobs:
+  # ============================================================
+  #  JOB 0 — DETECTAR SERVICIOS MODIFICADOS
+  # ============================================================
+  detect-changes:
+    name: "Detectar cambios"
+    runs-on: ubuntu-latest
+    outputs:
+      unit_matrix: ${{ steps.matrix.outputs.unit }}
+      it_matrix:   ${{ steps.matrix.outputs.it }}
+      run_unit:    ${{ steps.matrix.outputs.run_unit }}
+      run_it:      ${{ steps.matrix.outputs.run_it }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Filtrar servicios modificados
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            safety-service:
+              - 'safety-service/**'
+            purchase-service:
+              - 'purchase-service/**'
+            course-service:
+              - 'course-service/**'
+            exam-service:
+              - 'exam-service/**'
+            chat-service:
+              - 'chat-service/**'
+            order-service:
+              - 'order-service/**'
+            payment-service:
+              - 'payment-service/**'
+            user-service:
+              - 'user-service/**'
+            notification-service:
+              - 'notification-service/**'
+            api-gateway:
+              - 'api-gateway/**'
+            ci-workflow:
+              - '.github/workflows/**'
+
+      - name: Construir matrices dinámicas
+        id: matrix
+        run: |
+          # Si cambió el workflow de CI, correr todos los servicios
+          if [ "${{ steps.filter.outputs.ci-workflow }}" = "true" ]; then
+            UNIT='["safety-service","purchase-service","course-service","exam-service","chat-service","order-service","payment-service","user-service","notification-service","api-gateway"]'
+            IT='["safety-service","purchase-service","course-service","exam-service","chat-service","order-service","payment-service","user-service","notification-service"]'
+          else
+            CHANGES='${{ steps.filter.outputs.changes }}'
+            UNIT=$(echo "$CHANGES" | jq -c '[.[] | select(. != "ci-workflow")]')
+            IT=$(echo "$CHANGES"   | jq -c '[.[] | select(. != "ci-workflow" and . != "api-gateway")]')
+          fi
+
+          UNIT_LEN=$(echo "$UNIT" | jq 'length')
+          IT_LEN=$(echo "$IT"   | jq 'length')
+
+          echo "unit=$UNIT"                                                   >> $GITHUB_OUTPUT
+          echo "it=$IT"                                                       >> $GITHUB_OUTPUT
+          echo "run_unit=$([ "$UNIT_LEN" -gt 0 ] && echo true || echo false)" >> $GITHUB_OUTPUT
+          echo "run_it=$([ "$IT_LEN"   -gt 0 ] && echo true || echo false)"  >> $GITHUB_OUTPUT
+
   # ============================================================
   #  JOB 1 — PRUEBAS UNITARIAS (rápidas, sin Docker)
   # ============================================================
   unit-tests:
     name: "Unit — ${{ matrix.service }}"
+    needs: detect-changes
+    if: needs.detect-changes.outputs.run_unit == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        service:
-          - safety-service
-          - purchase-service
-          - course-service
-          - exam-service
-          - chat-service
-          - order-service
-          - payment-service
-          - user-service
-          - notification-service
-          - api-gateway
+        service: ${{ fromJson(needs.detect-changes.outputs.unit_matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -85,21 +138,16 @@ jobs:
   # ============================================================
   integration-tests:
     name: "IT — ${{ matrix.service }}"
-    needs: unit-tests
+    needs: [ detect-changes, unit-tests ]
+    if: |
+      always() &&
+      needs.detect-changes.outputs.run_it == 'true' &&
+      contains(fromJson('["success","skipped"]'), needs.unit-tests.result)
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        service:
-          - safety-service
-          - purchase-service
-          - course-service
-          - exam-service
-          - chat-service
-          - order-service
-          - payment-service
-          - user-service
-          - notification-service
+        service: ${{ fromJson(needs.detect-changes.outputs.it_matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -133,21 +181,17 @@ jobs:
   # ============================================================
   coverage-check:
     name: "Cobertura ≥ 80% — ${{ matrix.service }}"
-    needs: [ unit-tests, integration-tests ]
+    needs: [ detect-changes, unit-tests, integration-tests ]
+    if: |
+      always() &&
+      needs.detect-changes.outputs.run_it == 'true' &&
+      contains(fromJson('["success","skipped"]'), needs.unit-tests.result) &&
+      contains(fromJson('["success","skipped"]'), needs.integration-tests.result)
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        service:
-          - safety-service
-          - purchase-service
-          - course-service
-          - exam-service
-          - chat-service
-          - order-service
-          - payment-service
-          - user-service
-          - notification-service
+        service: ${{ fromJson(needs.detect-changes.outputs.it_matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
