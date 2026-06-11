@@ -16,6 +16,6 @@ public abstract class BaseCourseIT {
 
     @DynamicPropertySource
     static void mongoProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.data.mongodb.uri", mongo::getConnectionString);
+        registry.add("spring.data.mongodb.uri", () -> mongo.getConnectionString() + "/test");
     }
 }
