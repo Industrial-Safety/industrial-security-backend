@@ -1,6 +1,8 @@
 package com.industrial.safety.course_service.integration;
 
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.MongoDBContainer;
 
 public abstract class BaseCourseIT {
@@ -10,5 +12,10 @@ public abstract class BaseCourseIT {
 
     static {
         mongo.start();
+    }
+
+    @DynamicPropertySource
+    static void mongoProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.data.mongodb.uri", mongo::getConnectionString);
     }
 }

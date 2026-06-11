@@ -1,6 +1,5 @@
 package com.industrial.safety.course_service.integration.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.industrial.safety.course_service.model.Course;
 import com.industrial.safety.course_service.model.record.Details;
 import com.industrial.safety.course_service.model.record.Review;
@@ -49,7 +48,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class CourseControllerIT extends BaseCourseIT {
 
     @Autowired MockMvc        mockMvc;
-    @Autowired ObjectMapper   objectMapper;
     @Autowired CourseRepository courseRepository;
 
     // AssetCacheService depende de Redis; lo mockeamos para el test de integración

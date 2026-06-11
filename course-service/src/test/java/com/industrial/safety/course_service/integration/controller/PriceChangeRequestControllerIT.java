@@ -1,6 +1,5 @@
 package com.industrial.safety.course_service.integration.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.industrial.safety.course_service.messaging.PriceChangeEventPublisher;
 import com.industrial.safety.course_service.model.Course;
 import com.industrial.safety.course_service.model.PriceChangeRequest;
@@ -49,7 +48,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class PriceChangeRequestControllerIT extends BaseCourseIT {
 
     @Autowired MockMvc                       mockMvc;
-    @Autowired ObjectMapper                  objectMapper;
     @Autowired CourseRepository              courseRepository;
     @Autowired PriceChangeRequestRepository  priceChangeRepository;
 
