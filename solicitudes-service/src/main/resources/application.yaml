@@ -35,10 +35,6 @@ spring:
         # Manual ack requerido por SolicitudEventConsumer (channel.basicAck/basicNack)
         acknowledge-mode: manual
 
-eureka:
-  client:
-    enabled: false
-
 # Integracion con Jira Service Management (ITIL - Gestion de Solicitudes).
 jira:
   enabled: ${JIRA_ENABLED:true}
