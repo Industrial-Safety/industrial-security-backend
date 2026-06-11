@@ -12,6 +12,12 @@ spring:
   threads:
     virtual:
       enabled: true
+  datasource:
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 5000
+      max-lifetime: 900000
   jpa:
     hibernate:
       ddl-auto: update

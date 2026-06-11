@@ -1,6 +1,5 @@
 package com.industrial.safety.order_service.integration.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.industrial.safety.order_service.messaging.OrderEventPublisher;
 import com.industrial.safety.order_service.models.Order;
 import com.industrial.safety.order_service.models.OrderLineItems;
@@ -42,7 +41,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class OrderControllerIT {
 
     @Autowired MockMvc         mockMvc;
-    @Autowired ObjectMapper    objectMapper;
     @Autowired OrderRepository orderRepository;
 
     @MockitoBean OrderEventPublisher orderEventPublisher;

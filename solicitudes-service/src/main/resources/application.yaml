@@ -14,6 +14,11 @@ spring:
     url: jdbc:postgresql://db-industrial-safety.c0dee0yuo11h.us-east-1.rds.amazonaws.com:5432/solicitudes-db
     username: postgres
     password: ${SPRING_DATASOURCE_PASSWORD:admin}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 5000
+      max-lifetime: 900000
   jpa:
     hibernate:
       ddl-auto: update

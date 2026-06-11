@@ -17,6 +17,9 @@ spring:
       simple:
         acknowledge-mode: manual
         prefetch: 10
+        # Envío de email es lento: más consumidores en paralelo para drenar backlog en campaña
+        concurrency: 2
+        max-concurrency: 8
         retry:
           enabled: true
           initial-interval: 1s

@@ -12,6 +12,13 @@ spring:
   threads:
     virtual:
       enabled: true
+  datasource:
+    hikari:
+      # Servicio de menor tráfico: pool chico para cuidar max_connections de RDS (§2.3 del plan)
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-timeout: 5000
+      max-lifetime: 900000
   jpa:
     hibernate:
       ddl-auto: update

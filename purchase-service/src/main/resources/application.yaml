@@ -3,3 +3,9 @@ spring:
     name: purchase-service
   config:
     import: optional:configserver:http://localhost:8888
+  datasource:
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 5000
+      max-lifetime: 900000
