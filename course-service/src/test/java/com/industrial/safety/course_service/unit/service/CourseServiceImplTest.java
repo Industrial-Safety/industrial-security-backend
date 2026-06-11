@@ -265,6 +265,27 @@ class CourseServiceImplTest {
     }
 
     @Test
+    @DisplayName("updateCourse: conserva IDs de secciones y lectures que ya los tienen (rama false del null-check)")
+    void updateCourse_keepsExistingIds() {
+        course.setId("course-uuid-1");
+        course.getSectionList().get(0).setId("section-id-existente");
+        course.getSectionList().get(0).getLectureList().get(0).setId("lecture-id-existente");
+        course.getSectionList().get(0).getLectureList().get(0).getResourceList().get(0).setId("resource-id-existente");
+
+        given(courseRepository.findById("course-uuid-1")).willReturn(Optional.of(course));
+        given(courseRepository.save(any(Course.class))).willAnswer(inv -> inv.getArgument(0));
+        given(courseMapper.toCourseResponse(any())).willReturn(courseResponse);
+
+        courseService.updateCourse("course-uuid-1", courseRequest);
+
+        // IDs preexistentes no deben ser reemplazados
+        assertThat(course.getSectionList().get(0).getId()).isEqualTo("section-id-existente");
+        assertThat(course.getSectionList().get(0).getLectureList().get(0).getId()).isEqualTo("lecture-id-existente");
+        assertThat(course.getSectionList().get(0).getLectureList().get(0).getResourceList().get(0).getId())
+                .isEqualTo("resource-id-existente");
+    }
+
+    @Test
     @DisplayName("updateCourse: lanza excepción cuando el curso no existe")
     void updateCourse_notFound() {
         given(courseRepository.findById("id-inexistente")).willReturn(Optional.empty());

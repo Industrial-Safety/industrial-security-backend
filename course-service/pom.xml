@@ -224,6 +224,8 @@
 								<exclude>**/config/**</exclude>
 								<exclude>**/model/**</exclude>
 								<exclude>**/dto/**</exclude>
+								<exclude>**/mapper/**</exclude>
+								<exclude>**/exception/ResourceNotFoundException.class</exclude>
 								<exclude>**/*Application.class</exclude>
 							</excludes>
 						</configuration>
