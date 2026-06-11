@@ -9,10 +9,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import com.industrial.safety.order_service.integration.BaseOrderIT;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -24,8 +26,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
 @Tag("integration")
+@TestPropertySource(properties = {"spring.config.import=", "spring.cloud.aws.parameterstore.enabled=false"})
 @DisplayName("OrderRepository — Pruebas de Integración con PostgreSQL")
-class OrderRepositoryIT {
+class OrderRepositoryIT extends BaseOrderIT {
 
     @Autowired
     OrderRepository orderRepository;

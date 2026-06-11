@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import com.industrial.safety.order_service.integration.BaseOrderIT;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -28,16 +29,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.MOCK,
         properties = {
-                "spring.cloud.config.enabled=false",
-                "eureka.client.enabled=false",
-                "spring.jpa.hibernate.ddl-auto=create-drop"
+                "spring.config.import=",
+                "spring.cloud.aws.parameterstore.enabled=false",
+                "spring.jpa.hibernate.ddl-auto=create-drop",
+                "spring.rabbitmq.listener.simple.auto-startup=false"
         }
 )
 @AutoConfigureMockMvc
 @Tag("integration")
 @ActiveProfiles("test")
 @DisplayName("CouponController — Pruebas de Integración")
-class CouponControllerIT {
+class CouponControllerIT extends BaseOrderIT {
 
     @Autowired MockMvc           mockMvc;
     @Autowired CouponRepository  couponRepository;

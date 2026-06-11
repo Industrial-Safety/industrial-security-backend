@@ -10,9 +10,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import com.industrial.safety.course_service.integration.BaseCourseIT;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.mongodb.test.autoconfigure.DataMongoTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -24,8 +26,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataMongoTest
 @Tag("integration")
 @ActiveProfiles("test")
+@TestPropertySource(properties = {"spring.config.import=", "spring.cloud.aws.parameterstore.enabled=false"})
 @DisplayName("CourseRepository — Pruebas de Integración con MongoDB")
-class CourseRepositoryIT {
+class CourseRepositoryIT extends BaseCourseIT {
 
     @Autowired
     CourseRepository courseRepository;

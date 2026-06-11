@@ -21,6 +21,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.MOCK,
         properties = {
+                "spring.config.import=",
+                "spring.cloud.aws.parameterstore.enabled=false",
+                "spring.rabbitmq.listener.simple.auto-startup=false",
                 "notification.diagnostics.enabled=true",
                 "spring.mail.host=smtp.test.example.com"
         }

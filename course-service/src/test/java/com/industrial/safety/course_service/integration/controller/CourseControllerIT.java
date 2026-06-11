@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import com.industrial.safety.course_service.integration.BaseCourseIT;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -34,16 +35,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.MOCK,
         properties = {
-                "spring.cloud.config.enabled=false",
-                "eureka.client.enabled=false",
-                "spring.jpa.hibernate.ddl-auto=create-drop"
+                "spring.config.import=",
+                "spring.cloud.aws.parameterstore.enabled=false",
+                "spring.rabbitmq.listener.simple.auto-startup=false",
+                "spring.data.redis.repositories.enabled=false",
+                "spring.cache.type=none"
         }
 )
 @AutoConfigureMockMvc
 @Tag("integration")
 @ActiveProfiles("test")
 @DisplayName("CourseController — Pruebas de Integración")
-class CourseControllerIT {
+class CourseControllerIT extends BaseCourseIT {
 
     @Autowired MockMvc        mockMvc;
     @Autowired ObjectMapper   objectMapper;

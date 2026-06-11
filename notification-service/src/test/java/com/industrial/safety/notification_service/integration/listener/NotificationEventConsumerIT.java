@@ -11,9 +11,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.testcontainers.containers.RabbitMQContainer;
 
 import java.util.concurrent.TimeUnit;
 
@@ -30,11 +32,21 @@ import static org.mockito.BDDMockito.*;
  *
  * EmailService y WebAlertService se mockean para aislar la capa de mensajería.
  */
-@SpringBootTest
+@SpringBootTest(properties = {
+        "spring.config.import=",
+        "spring.cloud.aws.parameterstore.enabled=false"
+})
 @Tag("integration")
 @ActiveProfiles("test")
 @DisplayName("NotificationEventConsumer — Pruebas de Integración con RabbitMQ")
 class NotificationEventConsumerIT {
+
+    @ServiceConnection
+    static final RabbitMQContainer rabbit = new RabbitMQContainer("rabbitmq:3-management");
+
+    static {
+        rabbit.start();
+    }
 
     @Autowired RabbitTemplate rabbitTemplate;
 

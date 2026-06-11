@@ -18,6 +18,8 @@ import org.testcontainers.containers.PostgreSQLContainer;
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.MOCK,
         properties = {
+                "spring.config.import=",
+                "spring.cloud.aws.parameterstore.enabled=false",
                 "spring.cloud.config.enabled=false",
                 "eureka.client.enabled=false",
                 "spring.jpa.hibernate.ddl-auto=create-drop",

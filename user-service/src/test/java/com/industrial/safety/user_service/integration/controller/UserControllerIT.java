@@ -1,6 +1,6 @@
 package com.industrial.safety.user_service.integration.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.industrial.safety.user_service.integration.BaseUserIT;
 import com.industrial.safety.user_service.model.User;
 import com.industrial.safety.user_service.repository.UserRepository;
 import com.industrial.safety.user_service.service.KeycloakService;
@@ -29,8 +29,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.MOCK,
         properties = {
-                "spring.cloud.config.enabled=false",
-                "eureka.client.enabled=false",
+                "spring.config.import=",
+                "spring.cloud.aws.parameterstore.enabled=false",
                 "spring.jpa.hibernate.ddl-auto=create-drop"
         }
 )
@@ -38,10 +38,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Tag("integration")
 @ActiveProfiles("test")
 @DisplayName("UserController — Pruebas de Integración")
-class UserControllerIT {
+class UserControllerIT extends BaseUserIT {
 
-    @Autowired MockMvc       mockMvc;
-    @Autowired ObjectMapper  objectMapper;
+    @Autowired MockMvc        mockMvc;
     @Autowired UserRepository userRepository;
 
     @MockitoBean KeycloakService keycloakService;
