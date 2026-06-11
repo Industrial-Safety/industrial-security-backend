@@ -22,6 +22,7 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AssetCacheService — Pruebas Unitarias")
@@ -34,7 +35,8 @@ class AssetCacheServiceTest {
 
     @BeforeEach
     void setUp() {
-        given(redisTemplate.opsForValue()).willReturn(valueOps);
+        // lenient: no todos los tests invocan opsForValue() (ej: evictCourse, noInteractions)
+        lenient().when(redisTemplate.opsForValue()).thenReturn(valueOps);
     }
 
     // ── getCoverUrl ─────────────────────────────────────────────
