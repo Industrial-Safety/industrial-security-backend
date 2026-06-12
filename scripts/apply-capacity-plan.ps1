@@ -16,12 +16,14 @@
 #>
 param(
   [switch]$Rds,
+  [switch]$ReadReplica,
   [switch]$AutoScaling,
   [switch]$CircuitBreaker,
   [switch]$Alarms,
   [string]$Cluster = "industrial-safety-cluster",
   [string]$DbInstance = "db-industrial-safety",
   [string]$DbClass = "db.t4g.medium",
+  [string]$ReplicaId = "db-industrial-safety-replica",
   [string]$BrokerName = "industrial-security-rabbitmq",
   [string]$AlarmEmail = "ricardoismael777@gmail.com",
   [int]$MinTasks = 2,
@@ -49,8 +51,8 @@ $secondaryServices = @(
 )
 $allServices = $criticalServices + $secondaryServices
 
-if (-not ($Rds -or $AutoScaling -or $CircuitBreaker -or $Alarms)) {
-  Write-Host "Indica al menos una sección: -CircuitBreaker | -Alarms | -Rds | -AutoScaling"
+if (-not ($Rds -or $ReadReplica -or $AutoScaling -or $CircuitBreaker -or $Alarms)) {
+  Write-Host "Indica al menos una sección: -CircuitBreaker | -Alarms | -Rds | -ReadReplica | -AutoScaling"
   Write-Host "Lee el encabezado de este script para costos y orden recomendado."
   exit 1
 }
@@ -148,6 +150,34 @@ if ($Rds) {
     --query 'DBInstance.PendingModifiedValues' --output json
   Write-Host "Modificación lanzada (con Multi-AZ el cambio es ~sin downtime)."
   Write-Host "Seguimiento: aws rds describe-db-instances --db-instance-identifier $DbInstance --query 'DBInstances[0].DBInstanceStatus'"
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Read Replica (Fase 3 §4.2) — COSTO: ~+US$50/mes (otra instancia 24/7).
+# Crea una BD de SOLO-LECTURA, copia sincronizada de la principal, para
+# descargar las consultas de lectura (reportes/listados) y evitar la sobrecarga.
+# Requiere que la instancia principal esté 'available'.
+# ─────────────────────────────────────────────────────────────────────────────
+if ($ReadReplica) {
+  Write-Host "== Read Replica: $ReplicaId (copia de solo-lectura de $DbInstance) =="
+  $state = aws rds describe-db-instances --db-instance-identifier $DbInstance `
+    --query 'DBInstances[0].DBInstanceStatus' --output text
+  if ($state -ne "available") {
+    Write-Host "La instancia principal está '$state'. Debe estar 'available'. Arráncala:"
+    Write-Host "  aws rds start-db-instance --db-instance-identifier $DbInstance"
+    exit 1
+  }
+  aws rds create-db-read-replica `
+    --db-instance-identifier $ReplicaId `
+    --source-db-instance-identifier $DbInstance `
+    --db-instance-class $DbClass `
+    --region $region `
+    --query 'DBInstance.{Replica:DBInstanceIdentifier,Estado:DBInstanceStatus}' --output json
+  Write-Host "Réplica creándose (tarda ~10-20 min)."
+  Write-Host "Las apps de SOLO LECTURA deben apuntar al endpoint de la réplica:"
+  Write-Host "  aws rds describe-db-instances --db-instance-identifier $ReplicaId --query 'DBInstances[0].Endpoint.Address' --output text"
+  Write-Host "Para borrarla luego (dejar de pagar):"
+  Write-Host "  aws rds delete-db-instance --db-instance-identifier $ReplicaId --skip-final-snapshot"
 }
 
 # ─────────────────────────────────────────────────────────────────────────────

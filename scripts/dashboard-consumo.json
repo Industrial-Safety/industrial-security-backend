@@ -1,0 +1,76 @@
+{
+  "widgets": [
+    {
+      "type": "text", "x": 0, "y": 0, "width": 24, "height": 1,
+      "properties": { "markdown": "# SafeIndustrial — Consumo (CPU · RAM · Disco)" }
+    },
+    {
+      "type": "metric", "x": 0, "y": 1, "width": 12, "height": 6,
+      "properties": {
+        "title": "ECS — CPU (%) por servicio",
+        "region": "us-east-1", "period": 300, "stat": "Average",
+        "yAxis": { "left": { "min": 0, "max": 100 } },
+        "annotations": { "horizontal": [ { "label": "Umbral 70%", "value": 70 } ] },
+        "metrics": [
+          [ "AWS/ECS", "CPUUtilization", "ClusterName", "industrial-safety-cluster", "ServiceName", "api-gateway-service-41zhurrw" ],
+          [ "AWS/ECS", "CPUUtilization", "ClusterName", "industrial-safety-cluster", "ServiceName", "user-service-service-do5b3398" ],
+          [ "AWS/ECS", "CPUUtilization", "ClusterName", "industrial-safety-cluster", "ServiceName", "safety-service-service-6r85geni" ],
+          [ "AWS/ECS", "CPUUtilization", "ClusterName", "industrial-safety-cluster", "ServiceName", "solicitudes-service-service-xs6kjois" ],
+          [ "AWS/ECS", "CPUUtilization", "ClusterName", "industrial-safety-cluster", "ServiceName", "order-service-service-rymvdlcl" ],
+          [ "AWS/ECS", "CPUUtilization", "ClusterName", "industrial-safety-cluster", "ServiceName", "payment-service-service-4aky5hec" ],
+          [ "AWS/ECS", "CPUUtilization", "ClusterName", "industrial-safety-cluster", "ServiceName", "purchase-service-service-ulonme67" ]
+        ]
+      }
+    },
+    {
+      "type": "metric", "x": 12, "y": 1, "width": 12, "height": 6,
+      "properties": {
+        "title": "ECS — RAM (%) por servicio",
+        "region": "us-east-1", "period": 300, "stat": "Average",
+        "yAxis": { "left": { "min": 0, "max": 100 } },
+        "annotations": { "horizontal": [ { "label": "Umbral 75%", "value": 75 } ] },
+        "metrics": [
+          [ "AWS/ECS", "MemoryUtilization", "ClusterName", "industrial-safety-cluster", "ServiceName", "api-gateway-service-41zhurrw" ],
+          [ "AWS/ECS", "MemoryUtilization", "ClusterName", "industrial-safety-cluster", "ServiceName", "user-service-service-do5b3398" ],
+          [ "AWS/ECS", "MemoryUtilization", "ClusterName", "industrial-safety-cluster", "ServiceName", "safety-service-service-6r85geni" ],
+          [ "AWS/ECS", "MemoryUtilization", "ClusterName", "industrial-safety-cluster", "ServiceName", "solicitudes-service-service-xs6kjois" ],
+          [ "AWS/ECS", "MemoryUtilization", "ClusterName", "industrial-safety-cluster", "ServiceName", "order-service-service-rymvdlcl" ],
+          [ "AWS/ECS", "MemoryUtilization", "ClusterName", "industrial-safety-cluster", "ServiceName", "payment-service-service-4aky5hec" ],
+          [ "AWS/ECS", "MemoryUtilization", "ClusterName", "industrial-safety-cluster", "ServiceName", "purchase-service-service-ulonme67" ]
+        ]
+      }
+    },
+    {
+      "type": "metric", "x": 0, "y": 7, "width": 8, "height": 6,
+      "properties": {
+        "title": "RDS — CPU (%)",
+        "region": "us-east-1", "period": 300, "stat": "Average",
+        "yAxis": { "left": { "min": 0, "max": 100 } },
+        "annotations": { "horizontal": [ { "label": "Umbral 70%", "value": 70 } ] },
+        "metrics": [
+          [ "AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", "db-industrial-safety" ]
+        ]
+      }
+    },
+    {
+      "type": "metric", "x": 8, "y": 7, "width": 8, "height": 6,
+      "properties": {
+        "title": "RDS — RAM libre (bytes)",
+        "region": "us-east-1", "period": 300, "stat": "Average",
+        "metrics": [
+          [ "AWS/RDS", "FreeableMemory", "DBInstanceIdentifier", "db-industrial-safety" ]
+        ]
+      }
+    },
+    {
+      "type": "metric", "x": 16, "y": 7, "width": 8, "height": 6,
+      "properties": {
+        "title": "RDS — Disco libre (bytes)",
+        "region": "us-east-1", "period": 300, "stat": "Average",
+        "metrics": [
+          [ "AWS/RDS", "FreeStorageSpace", "DBInstanceIdentifier", "db-industrial-safety" ]
+        ]
+      }
+    }
+  ]
+}

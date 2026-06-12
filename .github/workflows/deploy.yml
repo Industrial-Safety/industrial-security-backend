@@ -87,13 +87,39 @@ jobs:
           docker push $ECR_REGISTRY/${{ matrix.ecr }}:$IMAGE_TAG
           docker push $ECR_REGISTRY/${{ matrix.ecr }}:latest
 
-      # ── 6. Force-new-deployment en ECS ───────────────────────────────
-      - name: Deploy en ECS — ${{ matrix.service }}
+      # ── 6. Registrar NUEVA task definition con la imagen recién subida ──
+      #     (antes se usaba --force-new-deployment, pero la task def fija la
+      #      imagen por digest inmutable -> reejecutaba el código viejo.
+      #      Ahora registramos una revisión nueva apuntando a la imagen :sha
+      #      y movemos el servicio a esa revisión = despliega código nuevo.)
+      - name: Registrar task definition y desplegar — ${{ matrix.service }}
+        env:
+          IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
         run: |
+          IMAGE="$ECR_REGISTRY/${{ matrix.ecr }}:$IMAGE_TAG"
+
+          # Descargar la task definition activa de la familia
+          aws ecs describe-task-definition --task-definition ${{ matrix.service }} \
+            --query 'taskDefinition' --output json > task-def.json
+
+          # Reemplazar la imagen y quitar los campos que register-task-definition NO acepta
+          jq --arg IMAGE "$IMAGE" '
+            .containerDefinitions[0].image = $IMAGE
+            | del(.taskDefinitionArn, .revision, .status, .requiresAttributes,
+                  .compatibilities, .registeredAt, .registeredBy)
+          ' task-def.json > new-task-def.json
+
+          # Registrar la nueva revisión y capturar su ARN
+          NEW_ARN=$(aws ecs register-task-definition \
+            --cli-input-json file://new-task-def.json \
+            --query 'taskDefinition.taskDefinitionArn' --output text)
+          echo "Nueva task definition registrada: $NEW_ARN"
+
+          # Apuntar el servicio a la nueva revisión (esto sí despliega la imagen nueva)
           aws ecs update-service \
             --cluster $ECS_CLUSTER \
             --service ${{ matrix.ecs }} \
-            --force-new-deployment \
+            --task-definition "$NEW_ARN" \
             --region $AWS_REGION
 
       # ── 7. Esperar hasta que la nueva tarea esté RUNNING ─────────────
