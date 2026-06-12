@@ -12,6 +12,7 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -26,6 +27,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test")
 @Tag("integration")
 @Testcontainers
+// @DataJpaTest no hereda BasePurchaseIT: hay que desactivar el Parameter Store
+// aquí, si no spring.config.import=aws-parameterstore intenta cargar credenciales.
+@TestPropertySource(properties = {
+        "spring.config.import=",
+        "spring.cloud.aws.parameterstore.enabled=false"
+})
 @DisplayName("EppDeliveryRepository — Pruebas de Integración con PostgreSQL")
 class EppDeliveryRepositoryIT {
 

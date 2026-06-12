@@ -4,6 +4,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.MongoDBContainer;
 
 /**
@@ -31,5 +33,13 @@ public abstract class BaseChatIT {
 
     static {
         mongo.start();
+    }
+
+    // MongoConfig lee ${spring.data.mongodb.uri} con @Value y llama getDatabase();
+    // @ServiceConnection no setea esa propiedad, así que la inyectamos aquí
+    // (con el nombre de BD '/test' que getDatabase() necesita).
+    @DynamicPropertySource
+    static void mongoProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.data.mongodb.uri", () -> mongo.getConnectionString() + "/test");
     }
 }
