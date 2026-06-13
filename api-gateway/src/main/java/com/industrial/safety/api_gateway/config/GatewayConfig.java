@@ -16,7 +16,7 @@ public class GatewayConfig {
     private static final String NOTIFICATION_WS   = "ws://notification-service.industrial-security:8084";
     private static final String CHAT_SERVICE      = "http://chat-service.industrial-security:8085";
     private static final String EXAM_SERVICE      = "http://exam-service.industrial-security:8086";
-    private static final String PURCHASE_SERVICE  = "http://purchase-service.industrial-security:8087";
+    private static final String PURCHASE_SERVICE  = "http://purchase-service.industrial-security:8080";
     private static final String SAFETY_SERVICE    = "http://safety-service.industrial-security:8099";
 
     @Bean
