@@ -29,6 +29,7 @@ export default function () {
       username:   __ENV.TEST_USER,
       password:   __ENV.TEST_PASS,
     },
+    { headers: { 'ngrok-skip-browser-warning': 'true' } },  // salta advertencia ngrok si aplica
   );
   check(res, {
     'token 200':       (r) => r.status === 200,

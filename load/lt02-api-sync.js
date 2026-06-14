@@ -19,24 +19,29 @@ export const options = {
   },
 };
 
+// Header necesario para saltar la pagina de advertencia de ngrok (plan gratuito).
+const NGROK = { 'ngrok-skip-browser-warning': 'true' };
+
 // setup(): obtiene UNA vez el token de Keycloak y lo comparte a todos los VUs
 export function setup() {
   const res = http.post(
     `${__ENV.KEYCLOAK_URL}/realms/industrial-safety/protocol/openid-connect/token`,
     {
-      grant_type: 'password',
-      client_id:  __ENV.CLIENT_ID,
-      username:   __ENV.TEST_USER,
-      password:   __ENV.TEST_PASS,
+      grant_type:    'password',
+      client_id:     __ENV.CLIENT_ID,
+      client_secret: __ENV.CLIENT_SECRET,   // client confidencial
+      username:      __ENV.TEST_USER,
+      password:      __ENV.TEST_PASS,
     },
+    { headers: NGROK },
   );
   check(res, { 'login 200': (r) => r.status === 200 });
   return { token: res.json('access_token') };
 }
 
 export default function (data) {
-  const params = { headers: { Authorization: `Bearer ${data.token}` } };
-  const res = http.get(`${__ENV.GATEWAY_URL}/api/v1/safety/incidents`, params);
+  const params = { headers: { Authorization: `Bearer ${data.token}`, ...NGROK } };
+  const res = http.get(`${__ENV.GATEWAY_URL}/api/v1/incidents`, params);
   check(res, { 'status 200': (r) => r.status === 200 });
   sleep(0.6);  // ritmo por VU -> ~83 req/s con 50 VUs
 }
