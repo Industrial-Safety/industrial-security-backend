@@ -221,6 +221,41 @@ public class KeycloakServiceImpl implements KeycloakService {
         }
     }
 
+    // ── Quitar rol (para ascensos limpios) ────────────────────────────────────
+
+    @Override
+    @CircuitBreaker(name = "keycloak", fallbackMethod = "fallbackRemoveRole")
+    @Retry(name = "keycloak")
+    public void removeRole(String keycloakId, String roleName) {
+        String token = getAdminToken();
+        String normalizedRole = toKeycloakRoleName(roleName);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+
+        String roleUrl = serverUrl.trim() + "/admin/realms/" + realm.trim() + "/roles/" + normalizedRole;
+        ResponseEntity<Map> roleResp = restTemplate.exchange(
+                roleUrl, HttpMethod.GET, new HttpEntity<>(headers), Map.class);
+        Map<String, Object> role = roleResp.getBody();
+        if (role == null) {
+            log.warn("Rol '{}' no existe en Keycloak; nada que remover", normalizedRole);
+            return;
+        }
+
+        String mappingUrl = serverUrl.trim() + "/admin/realms/" + realm.trim()
+                + "/users/" + keycloakId + "/role-mappings/realm";
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        restTemplate.exchange(mappingUrl, HttpMethod.DELETE,
+                new HttpEntity<>(List.of(role), headers), Void.class);
+        log.info("Rol '{}' removido de keycloakId={}", normalizedRole, keycloakId);
+    }
+
+    @SuppressWarnings("unused")
+    private void fallbackRemoveRole(String keycloakId, String roleName, Throwable ex) {
+        log.error("Keycloak circuit open — no se pudo remover rol {} de {}: {}", roleName, keycloakId, ex.getMessage());
+        throw new KeycloakUnavailableException("Servicio de autenticación no disponible. Intenta de nuevo en unos momentos.");
+    }
+
     // ── Cambiar contraseña ────────────────────────────────────────────────────
 
     private void updatePasswordWithToken(String token, String userId, String newPassword) {

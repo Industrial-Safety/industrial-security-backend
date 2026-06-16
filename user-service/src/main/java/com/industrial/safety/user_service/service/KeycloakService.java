@@ -6,6 +6,7 @@ public interface KeycloakService {
     String createUser(UserRequest userRequest);
     String getUserIdByEmail(String email);
     void assignRole(String keycloakId, String roleName);
+    void removeRole(String keycloakId, String roleName);
     void updatePassword(String userId, String newPassword);
     void setEnabled(String keycloakId, boolean enabled);
 }

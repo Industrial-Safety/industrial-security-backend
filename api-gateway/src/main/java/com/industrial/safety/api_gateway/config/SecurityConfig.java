@@ -64,6 +64,20 @@ public class SecurityConfig {
                         // Users - especificos primero, wildcards al final
                         .pathMatchers(HttpMethod.POST, "/api/v1/users/register").permitAll()
                         .pathMatchers(HttpMethod.POST, "/api/v1/users/change-password").authenticated()
+
+                        // Solicitudes de ACCESO (cambio de rol) — ANTES de los wildcards /users/{id} y /users/**
+                        // Solicitar el ascenso: Jefe de Seguridad o Admin (no el propio usuario)
+                        .pathMatchers(HttpMethod.POST, "/api/v1/users/role-requests").hasAnyRole(
+                                Role.JEFE_SEGURIDAD.name(), Role.ADMINISTRADOR.name()
+                        )
+                        // Revisar y aprobar/rechazar: Gerencia (decisión de negocio) o Admin
+                        .pathMatchers(HttpMethod.GET, "/api/v1/users/role-requests", "/api/v1/users/role-requests/**").hasAnyRole(
+                                Role.GERENCIA_GENERAL.name(), Role.ADMINISTRADOR.name()
+                        )
+                        .pathMatchers(HttpMethod.PUT, "/api/v1/users/role-requests/**").hasAnyRole(
+                                Role.GERENCIA_GENERAL.name(), Role.ADMINISTRADOR.name()
+                        )
+
                         .pathMatchers(HttpMethod.GET, "/api/v1/users/by-dni").hasAnyRole(
                                 Role.LOGISTICA_ALMACEN.name()
                         )
