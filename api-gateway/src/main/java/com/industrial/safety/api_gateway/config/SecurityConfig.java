@@ -161,6 +161,10 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.GET, "/api/v1/purchase/inventory", "/api/v1/purchase/inventory/**").hasAnyRole(
                                 Role.LOGISTICA_ALMACEN.name(), Role.GERENCIA_GENERAL.name()
                         )
+                        // Reportes gerenciales (Solicitud de INFORMACION): Gerencia / Admin
+                        .pathMatchers(HttpMethod.GET, "/api/v1/purchase/reports/**").hasAnyRole(
+                                Role.GERENCIA_GENERAL.name(), Role.ADMINISTRADOR.name()
+                        )
                         .pathMatchers(HttpMethod.PUT, "/api/v1/purchase/requests/**").hasAnyRole(
                                 Role.LOGISTICA_ALMACEN.name(), Role.GERENCIA_GENERAL.name()
                         )

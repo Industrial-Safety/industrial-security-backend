@@ -14,4 +14,7 @@ public interface PurchaseRequestService {
     PurchaseRequestResponse updateStatus(Long id, PurchaseRequestStatus estado);
     StatsResponse getStats();
     List<PurchaseRequestResponse> getApproved();
+
+    /** Reporte gerencial (Solicitud de INFORMACION): devuelve el consolidado y registra el acceso. */
+    StatsResponse generarReporteGerencial(String solicitante);
 }

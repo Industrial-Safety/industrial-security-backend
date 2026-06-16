@@ -18,6 +18,8 @@ public class RabbitMQConfig {
     // Exchange de plataforma (compartido) para eventos de solicitudes hacia solicitudes-service.
     public static final String PLATFORM_EXCHANGE = "industrial.safety.topic";
     public static final String SOLICITUD_SERVICIO_ROUTING_KEY = "event.solicitud.servicio";
+    // Solicitud de INFORMACION: traza cada acceso a un reporte sensible (Gerencia).
+    public static final String SOLICITUD_INFORMACION_ROUTING_KEY = "event.solicitud.informacion";
 
     @Bean
     public DirectExchange eppExchange() {

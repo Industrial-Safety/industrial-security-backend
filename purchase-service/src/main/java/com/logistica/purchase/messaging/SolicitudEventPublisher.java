@@ -30,4 +30,17 @@ public class SolicitudEventPublisher {
             log.warn("No se pudo publicar el evento de solicitud {}: {}", event.codigo(), e.getMessage());
         }
     }
+
+    /** Publica una Solicitud de INFORMACION (traza de acceso a reportes), tipo=INFORMACION. */
+    public void publishInformacion(SolicitudCreatedEvent event) {
+        try {
+            rabbitTemplate.convertAndSend(
+                    RabbitMQConfig.PLATFORM_EXCHANGE,
+                    RabbitMQConfig.SOLICITUD_INFORMACION_ROUTING_KEY,
+                    event);
+            log.info("Solicitud de INFORMACION publicada: codigo={}", event.codigo());
+        } catch (Exception e) {
+            log.warn("No se pudo publicar la solicitud de INFORMACION {}: {}", event.codigo(), e.getMessage());
+        }
+    }
 }

@@ -105,4 +105,23 @@ public class PurchaseRequestServiceImpl implements PurchaseRequestService {
                 .map(mapper::toResponse)
                 .toList();
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public StatsResponse generarReporteGerencial(String solicitante) {
+        StatsResponse stats = getStats();
+        // Solicitud de INFORMACION: deja traza de quién consultó el reporte y cuándo (registro + Jira).
+        SolicitudCreatedEvent traza = new SolicitudCreatedEvent(
+                "INF-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(),
+                "INFORMACION",
+                "Reporte gerencial de compras",
+                solicitante == null || solicitante.isBlank() ? "Gerencia" : solicitante,
+                "purchase-service",
+                "Low",
+                "Acceso al reporte consolidado de compras (total=%d, pendientes=%d, aprobadas=%d, rechazadas=%d)."
+                        .formatted(stats.totalSolicitudes(), stats.pendientes(), stats.aprobadas(), stats.rechazadas()),
+                LocalDate.now());
+        solicitudEventPublisher.publishInformacion(traza);
+        return stats;
+    }
 }

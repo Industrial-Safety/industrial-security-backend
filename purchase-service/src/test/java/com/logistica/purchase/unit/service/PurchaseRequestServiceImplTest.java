@@ -302,4 +302,24 @@ class PurchaseRequestServiceImplTest {
 
         assertThat(service.getApproved()).isEmpty();
     }
+
+    // =========================================================
+    //  generarReporteGerencial — Solicitud de INFORMACION
+    // =========================================================
+
+    @Test
+    @DisplayName("generarReporteGerencial: devuelve el consolidado y publica traza INFORMACION")
+    void generarReporteGerencial_publishesInformacion() {
+        given(repository.count()).willReturn(5L);
+        given(repository.countByEstado(PurchaseRequestStatus.PENDIENTE)).willReturn(2L);
+        given(repository.countByEstado(PurchaseRequestStatus.APROBADO)).willReturn(2L);
+        given(repository.countByEstado(PurchaseRequestStatus.RECHAZADO)).willReturn(1L);
+        given(repository.sumCostoEstimado()).willReturn(1500.0);
+
+        StatsResponse stats = service.generarReporteGerencial("gerente1");
+
+        assertThat(stats.totalSolicitudes()).isEqualTo(5);
+        assertThat(stats.totalCompras()).isEqualTo(1500.0);
+        then(solicitudEventPublisher).should().publishInformacion(any());
+    }
 }
