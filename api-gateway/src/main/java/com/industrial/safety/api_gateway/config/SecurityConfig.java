@@ -41,6 +41,11 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.GET, "/api/v1/course/price-requests/**").hasAnyRole(
                                 Role.MARKETING.name(), Role.INSTRUCTOR.name(), Role.ADMINISTRADOR.name()
                         )
+                        // Reseñas: las crea quien adquirió el curso (alumno/trabajador). DEBE ir antes del catch-all POST.
+                        .pathMatchers(HttpMethod.POST, "/api/v1/course/*/reviews").hasAnyRole(
+                                Role.ALUMNO.name(), Role.TRABAJADOR.name(),
+                                Role.INSTRUCTOR.name(), Role.ADMINISTRADOR.name()
+                        )
                         .pathMatchers(HttpMethod.POST, "/api/v1/course/**").hasAnyRole(
                                 Role.INSTRUCTOR.name(), Role.ADMINISTRADOR.name()
                         )

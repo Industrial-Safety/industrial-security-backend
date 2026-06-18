@@ -1,0 +1,4 @@
+# Secretos de la cuenta nueva generados durante la migracion. NO commitear.
+*.local.txt
+*.local.json
+secretos-*

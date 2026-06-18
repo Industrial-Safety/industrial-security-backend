@@ -2,15 +2,20 @@ package com.industrial.safety.course_service.mapper;
 
 import com.industrial.safety.course_service.dto.*;
 import com.industrial.safety.course_service.model.Course;
+import com.industrial.safety.course_service.model.CourseReview;
 import com.industrial.safety.course_service.model.component.Lecture;
 import com.industrial.safety.course_service.model.component.Resource;
 import com.industrial.safety.course_service.model.component.Section;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring")
 public interface CourseMapper
 {
+    @Mapping(target = "author", source = "authorName")
+    ReviewResponse toReviewResponse(CourseReview review);
+
     Course toCourse(CourseRequest courseRequest);
     Lecture toLecture(LectureRequest lectureRequest);
     Resource toResource(ResourceRequest resourceRequest);

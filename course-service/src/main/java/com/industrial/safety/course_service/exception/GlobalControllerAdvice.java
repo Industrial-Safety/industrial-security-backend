@@ -33,6 +33,19 @@ public class GlobalControllerAdvice {
 
         return problemDetail;
     }
+    @ExceptionHandler(ReviewNotAllowedException.class)
+    public ProblemDetail handleReviewNotAllowedException(ReviewNotAllowedException ex, WebRequest request){
+
+        log.warn("Reseña no permitida - Path: {}, Message: {}", request.getDescription(false), ex.getMessage());
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+
+        problemDetail.setTitle("Operación no permitida");
+        problemDetail.setType(URI.create("https://api.ecommerce.com/errors/forbidden"));
+        problemDetail.setProperty("Timestap", Instant.now());
+
+        return problemDetail;
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleMethodArgumentNotValidException(MethodArgumentNotValidException ex){
 

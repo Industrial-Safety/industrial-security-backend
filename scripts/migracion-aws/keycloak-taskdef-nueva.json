@@ -1,0 +1,45 @@
+{
+  "family": "industrial-safety-keycloak-task",
+  "cpu": "512",
+  "memory": "2048",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "runtimePlatform": { "cpuArchitecture": "X86_64", "operatingSystemFamily": "LINUX" },
+  "executionRoleArn": "arn:aws:iam::560904638369:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "keycloak-container",
+      "image": "quay.io/keycloak/keycloak:24.0.1",
+      "essential": true,
+      "portMappings": [
+        { "containerPort": 8080, "hostPort": 8080, "protocol": "tcp", "name": "keycloak-container-8080-tcp", "appProtocol": "http" }
+      ],
+      "command": ["start-dev", "--http-relative-path", "/", "--hostname-strict-https", "false"],
+      "environment": [
+        { "name": "KEYCLOAK_ADMIN", "value": "admin" },
+        { "name": "KEYCLOAK_ADMIN_PASSWORD", "value": "admin" },
+        { "name": "KC_BOOTSTRAP_ADMIN_USERNAME", "value": "admin" },
+        { "name": "KC_BOOTSTRAP_ADMIN_PASSWORD", "value": "admin" },
+        { "name": "KC_DB", "value": "postgres" },
+        { "name": "KC_DB_URL", "value": "jdbc:postgresql://db-industrial-safety.cavogy2wu2yn.us-east-1.rds.amazonaws.com:5432/keycloak-db?sslmode=require" },
+        { "name": "KC_DB_USERNAME", "value": "postgres" },
+        { "name": "KC_DB_SCHEMA", "value": "public" },
+        { "name": "KC_PROXY", "value": "edge" },
+        { "name": "KC_HTTP_ENABLED", "value": "true" },
+        { "name": "KC_HOSTNAME_STRICT", "value": "false" },
+        { "name": "KC_HOSTNAME_STRICT_HTTPS", "value": "false" }
+      ],
+      "secrets": [
+        { "name": "KC_DB_PASSWORD", "valueFrom": "arn:aws:ssm:us-east-1:560904638369:parameter/config/keycloak/db-password" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/industrial-safety-keycloak-task",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

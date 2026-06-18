@@ -25,6 +25,12 @@ server:
     include-message: always
     include-stacktrace: never
 
+# URL base de order-service para verificar propiedad del curso antes de reseñar.
+# Local: http://localhost:8082 (o nombre Eureka). Prod AWS: DNS de Cloud Map.
+services:
+  order:
+    base-url: ${ORDER_SERVICE_URL:http://order-service.industrial-security:8082}
+
 resilience4j:
   circuitbreaker:
     instances:
