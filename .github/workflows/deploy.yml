@@ -25,8 +25,8 @@ jobs:
     name: "Deploy — ${{ matrix.service }}"
     runs-on: ubuntu-latest
 
-    # Solo despliega si el CI terminó con éxito
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # workflow_dispatch: siempre; workflow_run: solo si CI pasó
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
 
     strategy:
       fail-fast: false   # si un servicio falla, los demás siguen
@@ -51,7 +51,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       # ── 2. Compilar JAR ───────────────────────────────────────────────
       - name: Set up Java ${{ env.JAVA_VERSION }}
@@ -80,7 +80,7 @@ jobs:
       # ── 5. Build + tag + push imagen Docker ──────────────────────────
       - name: Build, tag y push imagen Docker — ${{ matrix.service }}
         env:
-          IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
+          IMAGE_TAG: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
           cd ${{ matrix.service }}
           docker build -t $ECR_REGISTRY/${{ matrix.ecr }}:$IMAGE_TAG .
@@ -96,7 +96,7 @@ jobs:
       #      y movemos el servicio a esa revisión = despliega código nuevo.)
       - name: Registrar task definition y desplegar — ${{ matrix.service }}
         env:
-          IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
+          IMAGE_TAG: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
           IMAGE="$ECR_REGISTRY/${{ matrix.ecr }}:$IMAGE_TAG"
 
