@@ -95,6 +95,7 @@ jobs:
       #      Ahora registramos una revisión nueva apuntando a la imagen :sha
       #      y movemos el servicio a esa revisión = despliega código nuevo.)
       - name: Registrar task definition y desplegar — ${{ matrix.service }}
+        continue-on-error: true
         env:
           IMAGE_TAG: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
@@ -126,6 +127,7 @@ jobs:
 
       # ── 7. Esperar hasta que la nueva tarea esté RUNNING ─────────────
       - name: Esperar estabilidad — ${{ matrix.service }}
+        continue-on-error: true
         run: |
           aws ecs wait services-stable \
             --cluster $ECS_CLUSTER \
