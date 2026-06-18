@@ -31,6 +31,7 @@ public class RoleChangeRequest {
 
     private String keycloakId;
 
+    @Column(name = "current_role_val")
     private String currentRole;
 
     private String targetRole;
