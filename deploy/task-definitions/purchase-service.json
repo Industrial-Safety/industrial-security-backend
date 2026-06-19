@@ -1,0 +1,32 @@
+{
+  "family": "purchase-service",
+  "executionRoleArn": "arn:aws:iam::560904638369:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::560904638369:role/ecsTaskExecutionRole",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "containerDefinitions": [
+    {
+      "name": "purchase-service",
+      "image": "PLACEHOLDER",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "protocol": "tcp",
+          "name": "purchase-service-8080-tcp",
+          "appProtocol": "http"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/purchase-service",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

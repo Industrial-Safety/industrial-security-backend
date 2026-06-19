@@ -34,17 +34,17 @@ jobs:
       #       'ecs' usa el nombre EXACTO del servicio en ECS (incluye el sufijo generado).
       matrix:
         include:
-          - { service: safety-service,       ecr: industrial-security/safety-service,       ecs: safety-service-service-6r85geni }
-          - { service: purchase-service,     ecr: industrial-security/purchase-service,     ecs: purchase-service-service-ulonme67 }
-          - { service: solicitudes-service,  ecr: industrial-security/solicitudes-service,  ecs: solicitudes-service-service-xs6kjois }
-          - { service: course-service,       ecr: industrial-security/course-service,       ecs: course-service-service-ifmrw0rc }
-          - { service: exam-service,         ecr: industrial-security/exam-service,         ecs: exam-service-service-2nw0ujch }
-          - { service: chat-service,         ecr: industrial-security/chat-service,         ecs: chat-service-service-xf2hmld7 }
-          - { service: order-service,        ecr: industrial-security/order-service,        ecs: order-service-service-rymvdlcl }
-          - { service: payment-service,      ecr: industrial-security/payment-service,      ecs: payment-service-service-4aky5hec }
-          - { service: user-service,         ecr: industrial-security/user-service,         ecs: user-service-service-do5b3398 }
-          - { service: notification-service, ecr: industrial-security/notification-service, ecs: notification-service-service-jxfxyfhi }
-          - { service: api-gateway,          ecr: industrial-security/api-gateway,          ecs: api-gateway-service-41zhurrw }
+          - { service: safety-service,       ecr: industrial-security/safety-service,       ecs: safety-service }
+          - { service: purchase-service,     ecr: industrial-security/purchase-service,     ecs: purchase-service }
+          - { service: solicitudes-service,  ecr: industrial-security/solicitudes-service,  ecs: solicitudes-service }
+          - { service: course-service,       ecr: industrial-security/course-service,       ecs: course-service }
+          - { service: exam-service,         ecr: industrial-security/exam-service,         ecs: exam-service }
+          - { service: chat-service,         ecr: industrial-security/chat-service,         ecs: chat-service }
+          - { service: order-service,        ecr: industrial-security/order-service,        ecs: order-service }
+          - { service: payment-service,      ecr: industrial-security/payment-service,      ecs: payment-service }
+          - { service: user-service,         ecr: industrial-security/user-service,         ecs: user-service }
+          - { service: notification-service, ecr: industrial-security/notification-service, ecs: notification-service }
+          - { service: api-gateway,          ecr: industrial-security/api-gateway,          ecs: api-gateway }
 
     steps:
       # ── 1. Checkout del commit exacto que pasó el CI ──────────────────
@@ -77,6 +77,13 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      # ── 5a. Crear log group CloudWatch (idempotente) ─────────────────
+      - name: Crear log group CloudWatch — ${{ matrix.service }}
+        run: |
+          aws logs create-log-group \
+            --log-group-name /ecs/${{ matrix.service }} \
+            --region $AWS_REGION 2>/dev/null || true
+
       # ── 5. Build + tag + push imagen Docker ──────────────────────────
       - name: Build, tag y push imagen Docker — ${{ matrix.service }}
         env:
@@ -90,10 +97,9 @@ jobs:
           docker push $ECR_REGISTRY/${{ matrix.ecr }}:latest
 
       # ── 6. Registrar NUEVA task definition con la imagen recién subida ──
-      #     (antes se usaba --force-new-deployment, pero la task def fija la
-      #      imagen por digest inmutable -> reejecutaba el código viejo.
-      #      Ahora registramos una revisión nueva apuntando a la imagen :sha
-      #      y movemos el servicio a esa revisión = despliega código nuevo.)
+      #     Si la familia no existe todavía, usa el template de deploy/task-definitions/.
+      #     Si ya existe, actualiza la revisión activa con la nueva imagen.
+      #     El update-service es best-effort: puede no existir el servicio ECS aún.
       - name: Registrar task definition y desplegar — ${{ matrix.service }}
         continue-on-error: true
         env:
@@ -101,9 +107,12 @@ jobs:
         run: |
           IMAGE="$ECR_REGISTRY/${{ matrix.ecr }}:$IMAGE_TAG"
 
-          # Descargar la task definition activa de la familia
-          aws ecs describe-task-definition --task-definition ${{ matrix.service }} \
-            --query 'taskDefinition' --output json > task-def.json
+          # Obtener task def existente o usar template del repo (primera vez)
+          if ! aws ecs describe-task-definition --task-definition ${{ matrix.service }} \
+              --query 'taskDefinition' --output json > task-def.json 2>/dev/null; then
+            echo "Primera vez: usando template deploy/task-definitions/${{ matrix.service }}.json"
+            cp deploy/task-definitions/${{ matrix.service }}.json task-def.json
+          fi
 
           # Reemplazar la imagen y quitar los campos que register-task-definition NO acepta
           jq --arg IMAGE "$IMAGE" '
@@ -118,12 +127,13 @@ jobs:
             --query 'taskDefinition.taskDefinitionArn' --output text)
           echo "Nueva task definition registrada: $NEW_ARN"
 
-          # Apuntar el servicio a la nueva revisión (esto sí despliega la imagen nueva)
+          # Apuntar el servicio a la nueva revisión (puede no existir el servicio aún)
           aws ecs update-service \
             --cluster $ECS_CLUSTER \
             --service ${{ matrix.ecs }} \
             --task-definition "$NEW_ARN" \
-            --region $AWS_REGION
+            --region $AWS_REGION \
+            || echo "⚠ Servicio '${{ matrix.ecs }}' no existe aún — task def registrada OK"
 
       # ── 7. Esperar hasta que la nueva tarea esté RUNNING ─────────────
       - name: Esperar estabilidad — ${{ matrix.service }}
