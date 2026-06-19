@@ -151,4 +151,21 @@ class KeycloakServiceImplMoreTest {
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("access_token");
     }
+
+    // ── createUser con serverUrl/realm null → ramas true de ternarios ────────
+
+    @Test
+    @DisplayName("createUser: serverUrl y realm null → ramas true de ternarios null-check en createUser()")
+    void createUser_nullServerUrl_throwsLocationError() {
+        ReflectionTestUtils.setField(service, "serverUrl", null);
+        ReflectionTestUtils.setField(service, "realm", null);
+
+        // Token mock sigue funcionando porque contains("/realms/master/") matchea ""/realms/master/..."
+        given(restTemplate.exchange(endsWith("/users"), eq(HttpMethod.POST), any(), eq(Void.class)))
+                .willReturn(ResponseEntity.ok().build()); // sin Location header
+
+        assertThatThrownBy(() -> service.createUser(req("ROLE_WORKER", "secret")))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Location");
+    }
 }

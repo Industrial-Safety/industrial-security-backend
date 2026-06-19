@@ -163,6 +163,33 @@ class UserServiceImplTest {
             then(keycloakService).should().getUserIdByEmail("juan@example.com");
             then(keycloakService).should().assignRole("kc-existing-id", "ROLE_STUDENT");
         }
+
+        @Test
+        @DisplayName("existing user + incoming keycloakId igual al existente → no sincroniza (rama C=false: !equals false)")
+        void createUser_existingUser_keycloakIdSame_noSync() {
+            userRequest.setKeycloakId("kc-uuid-1"); // mismo que el existente → !equals() = false
+            given(userRepository.findByEmail("juan@example.com")).willReturn(Optional.of(user));
+            given(userMapper.toUserResponse(user)).willReturn(userResponse);
+
+            userService.createUser(userRequest);
+
+            // body del if no se ejecuta: no guarda, Keycloak no se llama
+            then(userRepository).should(never()).save(any());
+            then(keycloakService).shouldHaveNoInteractions();
+        }
+
+        @Test
+        @DisplayName("existing user + incoming keycloakId en blanco → no sincroniza (rama B=false: !isBlank false)")
+        void createUser_existingUser_keycloakIdBlank_noSync() {
+            userRequest.setKeycloakId("   "); // blank → !isBlank() = false → cortocircuito
+            given(userRepository.findByEmail("juan@example.com")).willReturn(Optional.of(user));
+            given(userMapper.toUserResponse(user)).willReturn(userResponse);
+
+            userService.createUser(userRequest);
+
+            then(userRepository).should(never()).save(any());
+            then(keycloakService).shouldHaveNoInteractions();
+        }
     }
 
     // =========================================================
