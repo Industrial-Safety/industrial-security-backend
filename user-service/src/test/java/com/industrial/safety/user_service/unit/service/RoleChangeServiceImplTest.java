@@ -13,6 +13,7 @@ import com.industrial.safety.user_service.service.KeycloakService;
 import com.industrial.safety.user_service.service.Impl.RoleChangeServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import java.util.List;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -145,5 +146,72 @@ class RoleChangeServiceImplTest {
 
         assertThat(res.status()).isEqualTo("RECHAZADA");
         then(keycloakService).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("rechazar: motivo null → no modifica el reason existente")
+    void rechazar_nullMotivo_noReason() {
+        RoleChangeRequest pend = RoleChangeRequest.builder()
+                .id("r5").status(RoleChangeStatus.PENDIENTE).reason("Motivo previo").build();
+        given(repository.findById("r5")).willReturn(Optional.of(pend));
+        given(repository.save(any(RoleChangeRequest.class))).willAnswer(inv -> inv.getArgument(0));
+
+        RoleChangeResponse res = service.rechazar("r5", "gerente1", null);
+
+        assertThat(res.status()).isEqualTo("RECHAZADA");
+        assertThat(pend.getReason()).isEqualTo("Motivo previo");
+    }
+
+    @Test
+    @DisplayName("rechazar: motivo presente + reason existente → concatena al reason")
+    void rechazar_motivoConcatenado() {
+        RoleChangeRequest pend = RoleChangeRequest.builder()
+                .id("r6").status(RoleChangeStatus.PENDIENTE).reason("Motivo inicial").build();
+        given(repository.findById("r6")).willReturn(Optional.of(pend));
+        given(repository.save(any(RoleChangeRequest.class))).willAnswer(inv -> inv.getArgument(0));
+
+        service.rechazar("r6", "gerente1", "Rechazado por cumplimiento");
+
+        assertThat(pend.getReason()).contains("| Rechazo:");
+    }
+
+    @Test
+    @DisplayName("aprobar: replaceRole=true pero mismo rol → no llama removeRole")
+    void aprobar_sameRole_noRemove() {
+        RoleChangeRequest pend = RoleChangeRequest.builder()
+                .id("r7").userId("u1").keycloakId("kc1")
+                .currentRole("JEFE_SEGURIDAD").targetRole("JEFE_SEGURIDAD")
+                .replaceRole(true).status(RoleChangeStatus.PENDIENTE).build();
+        given(repository.findById("r7")).willReturn(Optional.of(pend));
+        given(userRepository.findById("u1")).willReturn(Optional.of(buildUser()));
+        given(repository.save(any(RoleChangeRequest.class))).willAnswer(inv -> inv.getArgument(0));
+
+        service.aprobar("r7", "gerente1");
+
+        then(keycloakService).should().assignRole("kc1", "JEFE_SEGURIDAD");
+        then(keycloakService).should(never()).removeRole(any(), any());
+    }
+
+    @Test
+    @DisplayName("listarPendientes: retorna solo solicitudes en estado PENDIENTE")
+    void listarPendientes_ok() {
+        given(repository.findByStatusOrderByCreatedAtDesc(RoleChangeStatus.PENDIENTE))
+                .willReturn(List.of(RoleChangeRequest.builder()
+                        .id("r8").status(RoleChangeStatus.PENDIENTE).build()));
+
+        var result = service.listarPendientes();
+
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("listarTodas: retorna todas las solicitudes")
+    void listarTodas_ok() {
+        given(repository.findAllByOrderByCreatedAtDesc())
+                .willReturn(List.of(
+                        RoleChangeRequest.builder().id("r9").status(RoleChangeStatus.PENDIENTE).build(),
+                        RoleChangeRequest.builder().id("r10").status(RoleChangeStatus.APROBADA).build()));
+
+        assertThat(service.listarTodas()).hasSize(2);
     }
 }
