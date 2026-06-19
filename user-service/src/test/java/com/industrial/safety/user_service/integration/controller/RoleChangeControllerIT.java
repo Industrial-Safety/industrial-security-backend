@@ -149,4 +149,32 @@ class RoleChangeControllerIT extends BaseUserIT {
                         .header("X-User-Id", "gerente-1"))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    @DisplayName("POST /role-requests sin X-User-Id → 201 actor resuelto a 'system' (rama false de actor())")
+    void solicitar_sin_header_actor_system() throws Exception {
+        String body = """
+                {"userId":"%s","targetRole":"JEFE_SEGURIDAD","replaceRole":false,"reason":"Sin header"}
+                """.formatted(savedUser.getId());
+
+        mockMvc.perform(post(BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.requestedBy").value("system"));
+    }
+
+    @Test
+    @DisplayName("PUT /role-requests/{id}/reject sin body → 200 motivo=null (rama false body!=null)")
+    void rechazar_sin_body_motivo_null() throws Exception {
+        RoleChangeRequest req = roleChangeRepo.save(RoleChangeRequest.builder()
+                .codigo("ACC-test-3").userId(savedUser.getId()).keycloakId("kc-1")
+                .currentRole("ROLE_INSTRUCTOR").targetRole("JEFE_SEGURIDAD")
+                .replaceRole(true).status(RoleChangeStatus.PENDIENTE)
+                .requestedBy("u1").createdAt(LocalDateTime.now()).build());
+
+        mockMvc.perform(put(BASE_URL + "/{id}/reject", req.getId())
+                        .header("X-User-Id", "gerente-1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("RECHAZADA"));
+    }
 }

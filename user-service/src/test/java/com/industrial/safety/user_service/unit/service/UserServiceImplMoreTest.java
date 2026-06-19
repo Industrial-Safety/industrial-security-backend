@@ -128,4 +128,50 @@ class UserServiceImplMoreTest {
 
         then(userRepository).should().save(any());
     }
+
+    // ── createUser — mustChangePassword != null (rama true del ternario) ──────
+
+    @Test
+    @DisplayName("createUser: mustChangePassword explícito → usa ese valor (rama true getMustChangePassword()!=null)")
+    void createUser_mustChangePasswordExplicit_usesValue() {
+        UserRequest req = new UserRequest();
+        req.setEmail("new2@example.com");
+        req.setRole("ROLE_ALUMNO");
+        req.setPassword("pass");
+        req.setMustChangePassword(false); // no null → getMustChangePassword() != null = true
+
+        given(userRepository.findByEmail("new2@example.com")).willReturn(Optional.empty());
+        given(userMapper.toUser(any())).willReturn(user);
+        given(qrService.generateAndUploadQr(any(), any(), any(), any())).willReturn("url");
+        given(userRepository.save(any())).willReturn(user);
+        given(userMapper.toUserResponse(user)).willReturn(response);
+        given(keycloakService.createUser(any())).willReturn("kc-new");
+
+        userService.createUser(req);
+
+        then(userRepository).should().save(any());
+    }
+
+    // ── createUser — keycloakId en blanco → llama Keycloak (rama B=false del &&) ──
+
+    @Test
+    @DisplayName("createUser: keycloakId en blanco → !isBlank()=false → llama keycloakService.createUser")
+    void createUser_blankKeycloakId_callsKeycloak() {
+        UserRequest req = new UserRequest();
+        req.setEmail("blank@example.com");
+        req.setRole("ROLE_ALUMNO");
+        req.setPassword("pass");
+        req.setKeycloakId("   "); // !isBlank() = false → va al else → llama keycloak
+
+        given(userRepository.findByEmail("blank@example.com")).willReturn(Optional.empty());
+        given(keycloakService.createUser(any())).willReturn("kc-created");
+        given(userMapper.toUser(any())).willReturn(user);
+        given(qrService.generateAndUploadQr(any(), any(), any(), any())).willReturn("url");
+        given(userRepository.save(any())).willReturn(user);
+        given(userMapper.toUserResponse(user)).willReturn(response);
+
+        userService.createUser(req);
+
+        then(keycloakService).should().createUser(any());
+    }
 }
