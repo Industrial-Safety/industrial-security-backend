@@ -2,6 +2,7 @@ package com.logistica.purchase.messaging;
 
 import com.logistica.purchase.config.RabbitMQConfig;
 import com.logistica.purchase.dto.SolicitudCreatedEvent;
+import com.logistica.purchase.dto.SolicitudResolucionEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -28,6 +29,19 @@ public class SolicitudEventPublisher {
             log.info("Evento de solicitud publicado: codigo={}", event.codigo());
         } catch (Exception e) {
             log.warn("No se pudo publicar el evento de solicitud {}: {}", event.codigo(), e.getMessage());
+        }
+    }
+
+    /** Publica la resolución (aprobada/rechazada) para que solicitudes-service transicione el ticket Jira. */
+    public void publishResolucion(SolicitudResolucionEvent event) {
+        try {
+            rabbitTemplate.convertAndSend(
+                    RabbitMQConfig.PLATFORM_EXCHANGE,
+                    RabbitMQConfig.SOLICITUD_RESOLUCION_ROUTING_KEY,
+                    event);
+            log.info("Resolución de solicitud publicada: codigo={} aprobado={}", event.codigo(), event.aprobado());
+        } catch (Exception e) {
+            log.warn("No se pudo publicar la resolución {}: {}", event.codigo(), e.getMessage());
         }
     }
 

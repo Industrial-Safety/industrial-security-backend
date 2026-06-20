@@ -2,6 +2,7 @@ package com.industrial.safety.solicitudes.listener;
 
 import com.industrial.safety.solicitudes.config.RabbitMQConfig;
 import com.industrial.safety.solicitudes.dto.SolicitudCreatedEvent;
+import com.industrial.safety.solicitudes.dto.SolicitudResolucionEvent;
 import com.industrial.safety.solicitudes.service.SolicitudService;
 import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,21 @@ public class SolicitudEventConsumer {
             channel.basicAck(tag, false);
         } catch (RuntimeException ex) {
             log.error("[solicitud-event] Error procesando solicitud — DLQ", ex);
+            channel.basicNack(tag, false, false);
+        }
+    }
+
+    /** Resolución de una solicitud → transiciona el ticket Jira (Finalizada / RECHAZADO). */
+    @RabbitListener(queues = RabbitMQConfig.RESOLUCION_QUEUE)
+    public void consumeResolucion(@Payload SolicitudResolucionEvent event,
+                                  Channel channel,
+                                  @Header(AmqpHeaders.DELIVERY_TAG) long tag) throws IOException {
+        log.info("[resolucion-event] codigo={} aprobado={}", event.codigo(), event.aprobado());
+        try {
+            solicitudService.resolver(event.codigo(), event.aprobado());
+            channel.basicAck(tag, false);
+        } catch (RuntimeException ex) {
+            log.error("[resolucion-event] Error procesando resolución", ex);
             channel.basicNack(tag, false, false);
         }
     }

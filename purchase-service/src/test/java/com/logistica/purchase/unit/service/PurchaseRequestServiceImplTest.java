@@ -28,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PurchaseRequestServiceImpl — Pruebas Unitarias")
@@ -235,6 +236,28 @@ class PurchaseRequestServiceImplTest {
 
         assertThatThrownBy(() -> service.updateStatus(99L, PurchaseRequestStatus.APROBADO))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("updateStatus: al RECHAZAR publica la resolución")
+    void updateStatus_rechazado_publicaResolucion() {
+        given(repository.findById(1L)).willReturn(Optional.of(pendingEntity));
+        given(repository.save(any())).willReturn(pendingEntity);
+
+        service.updateStatus(1L, PurchaseRequestStatus.RECHAZADO);
+
+        then(solicitudEventPublisher).should().publishResolucion(any());
+    }
+
+    @Test
+    @DisplayName("updateStatus: estado no resolutivo (PENDIENTE) NO publica resolución")
+    void updateStatus_pendiente_noPublicaResolucion() {
+        given(repository.findById(1L)).willReturn(Optional.of(pendingEntity));
+        given(repository.save(any())).willReturn(pendingEntity);
+
+        service.updateStatus(1L, PurchaseRequestStatus.PENDIENTE);
+
+        then(solicitudEventPublisher).should(never()).publishResolucion(any());
     }
 
     // =========================================================

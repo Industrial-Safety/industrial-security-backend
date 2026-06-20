@@ -27,6 +27,10 @@ public class RabbitMQConfig {
     /** Patron de routing: event.solicitud.servicio / .informacion / .acceso */
     public static final String ROUTING_PATTERN = "event.solicitud.#";
 
+    /** Cola y patron para resoluciones (aprobada/rechazada) → transicion del ticket Jira. */
+    public static final String RESOLUCION_QUEUE = "solicitudes.resolucion.queue";
+    public static final String RESOLUCION_PATTERN = "event.resolucion.#";
+
     @Bean
     MessageConverter jsonMessageConverter() {
         return new JacksonJsonMessageConverter();
@@ -63,5 +67,15 @@ public class RabbitMQConfig {
     @Bean
     Binding solicitudesDlqBinding(Queue solicitudesDeadLetterQueue, TopicExchange deadLetterExchange) {
         return BindingBuilder.bind(solicitudesDeadLetterQueue).to(deadLetterExchange).with(SOLICITUDES_DLQ);
+    }
+
+    @Bean
+    Queue resolucionQueue() {
+        return QueueBuilder.durable(RESOLUCION_QUEUE).build();
+    }
+
+    @Bean
+    Binding resolucionBinding(Queue resolucionQueue, TopicExchange platformExchange) {
+        return BindingBuilder.bind(resolucionQueue).to(platformExchange).with(RESOLUCION_PATTERN);
     }
 }

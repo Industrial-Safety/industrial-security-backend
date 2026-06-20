@@ -55,7 +55,7 @@ public class JiraClient {
 
             Map<String, Object> body = Map.of(
                     "fields", Map.of(
-                            "project",   Map.of("key", props.projectKey()),
+                            "project",   Map.of("key", props.projectKeyFor(s.getTipo())),
                             "summary",   resumen,
                             "issuetype", Map.of("name", props.issueType()),
                             "labels",    List.of(
@@ -81,6 +81,59 @@ public class JiraClient {
         } catch (Exception e) {
             log.warn("No se pudo crear el ticket en Jira para {}: {}", s.getCodigo(), e.getMessage());
             return null;
+        }
+    }
+
+    /** Estados destino candidatos según la decisión (se usa el primero disponible en el workflow). */
+    private static final List<String> APROBADO_TARGETS =
+            List.of("FINALIZADA", "ATENDIDO", "LISTO", "HECHO", "DONE", "APROBADO", "CERRADO");
+    private static final List<String> RECHAZADO_TARGETS =
+            List.of("RECHAZADO", "RECHAZADA", "CANCELADO", "CANCELADA", "DESCARTADO");
+
+    /**
+     * Transiciona el ticket Jira según la resolución. A prueba de fallos: si no
+     * encuentra una transición válida o Jira no responde, solo loguea (no interrumpe).
+     */
+    @SuppressWarnings("unchecked")
+    public void transition(String issueKey, boolean aprobado) {
+        if (!props.enabled() || issueKey == null || issueKey.isBlank()) return;
+        List<String> targets = aprobado ? APROBADO_TARGETS : RECHAZADO_TARGETS;
+        try {
+            Map<String, Object> resp = restClient.get()
+                    .uri(props.baseUrl() + "/rest/api/3/issue/" + issueKey + "/transitions")
+                    .header("Authorization", basicAuth())
+                    .accept(MediaType.APPLICATION_JSON)
+                    .retrieve()
+                    .body(Map.class);
+
+            List<Map<String, Object>> transitions = resp == null ? List.of()
+                    : (List<Map<String, Object>>) resp.getOrDefault("transitions", List.of());
+
+            String transitionId = null;
+            for (Map<String, Object> t : transitions) {
+                Map<String, Object> to = (Map<String, Object>) t.get("to");
+                String toName = to != null ? String.valueOf(to.get("name")).toUpperCase() : "";
+                String trName = String.valueOf(t.get("name")).toUpperCase();
+                if (targets.contains(toName) || targets.contains(trName)) {
+                    transitionId = String.valueOf(t.get("id"));
+                    break;
+                }
+            }
+            if (transitionId == null) {
+                log.warn("Sin transición objetivo para {} (aprobado={}); transiciones disponibles no coinciden", issueKey, aprobado);
+                return;
+            }
+
+            restClient.post()
+                    .uri(props.baseUrl() + "/rest/api/3/issue/" + issueKey + "/transitions")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .header("Authorization", basicAuth())
+                    .body(Map.of("transition", Map.of("id", transitionId)))
+                    .retrieve()
+                    .toBodilessEntity();
+            log.info("Ticket Jira {} transicionado (aprobado={})", issueKey, aprobado);
+        } catch (Exception e) {
+            log.warn("No se pudo transicionar el ticket {} en Jira: {}", issueKey, e.getMessage());
         }
     }
 

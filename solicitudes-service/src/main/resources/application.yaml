@@ -43,3 +43,7 @@ jira:
   api-token: ${JIRA_API_TOKEN:}
   project-key: ${JIRA_PROJECT_KEY:SI}
   issue-type: ${JIRA_ISSUE_TYPE:Task}
+  # Un proyecto Jira por tipo ITIL (si no se setea, cae en project-key)
+  project-servicio: ${JIRA_PROJECT_SERVICIO:SI}
+  project-informacion: ${JIRA_PROJECT_INFORMACION:GDD}
+  project-acceso: ${JIRA_PROJECT_ACCESO:GDA}

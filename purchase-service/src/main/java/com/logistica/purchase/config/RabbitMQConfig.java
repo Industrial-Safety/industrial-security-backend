@@ -20,6 +20,8 @@ public class RabbitMQConfig {
     public static final String SOLICITUD_SERVICIO_ROUTING_KEY = "event.solicitud.servicio";
     // Solicitud de INFORMACION: traza cada acceso a un reporte sensible (Gerencia).
     public static final String SOLICITUD_INFORMACION_ROUTING_KEY = "event.solicitud.informacion";
+    // Resolución (aprobada/rechazada): solicitudes-service transiciona el ticket Jira.
+    public static final String SOLICITUD_RESOLUCION_ROUTING_KEY = "event.resolucion.servicio";
 
     @Bean
     public DirectExchange eppExchange() {

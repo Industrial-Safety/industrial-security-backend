@@ -16,7 +16,10 @@ public record JiraProperties(
         String email,
         String apiToken,
         String projectKey,
-        String issueType
+        String issueType,
+        String projectServicio,
+        String projectInformacion,
+        String projectAcceso
 ) {
     public JiraProperties {
         if (issueType == null || issueType.isBlank()) {
@@ -25,5 +28,28 @@ public record JiraProperties(
         if (projectKey == null || projectKey.isBlank()) {
             projectKey = "GSI";
         }
+        // Cada tipo ITIL cae en su propio proyecto; si no se configura, usa el general.
+        if (projectServicio == null || projectServicio.isBlank()) {
+            projectServicio = projectKey;
+        }
+        if (projectInformacion == null || projectInformacion.isBlank()) {
+            projectInformacion = projectKey;
+        }
+        if (projectAcceso == null || projectAcceso.isBlank()) {
+            projectAcceso = projectKey;
+        }
+    }
+
+    /** Devuelve el proyecto Jira segun el tipo ITIL (SERVICIO / INFORMACION / ACCESO). */
+    public String projectKeyFor(String tipo) {
+        if (tipo == null) {
+            return projectKey;
+        }
+        return switch (tipo.trim().toUpperCase()) {
+            case "SERVICIO" -> projectServicio;
+            case "INFORMACION" -> projectInformacion;
+            case "ACCESO" -> projectAcceso;
+            default -> projectKey;
+        };
     }
 }

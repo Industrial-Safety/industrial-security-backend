@@ -4,6 +4,7 @@ import com.logistica.purchase.dto.PurchaseRequestCreateRequest;
 import com.logistica.purchase.dto.PurchaseRequestResponse;
 import com.logistica.purchase.dto.StatsResponse;
 import com.logistica.purchase.dto.SolicitudCreatedEvent;
+import com.logistica.purchase.dto.SolicitudResolucionEvent;
 import com.logistica.purchase.entity.PurchaseRequest;
 import com.logistica.purchase.entity.PurchaseRequestStatus;
 import com.logistica.purchase.exception.ResourceNotFoundException;
@@ -83,7 +84,15 @@ public class PurchaseRequestServiceImpl implements PurchaseRequestService {
         PurchaseRequest entity = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Solicitud", "id", id));
         entity.setEstado(estado);
-        return mapper.toResponse(repository.save(entity));
+        PurchaseRequest guardada = repository.save(entity);
+
+        // Al resolverse, avisar para que solicitudes-service transicione el ticket Jira.
+        if (estado == PurchaseRequestStatus.APROBADO || estado == PurchaseRequestStatus.RECHAZADO) {
+            solicitudEventPublisher.publishResolucion(
+                    new SolicitudResolucionEvent(guardada.getCodigoSolicitud(),
+                            estado == PurchaseRequestStatus.APROBADO));
+        }
+        return mapper.toResponse(guardada);
     }
 
     @Override

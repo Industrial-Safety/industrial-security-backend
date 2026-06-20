@@ -55,6 +55,17 @@ public class SolicitudServiceImpl implements SolicitudService {
     }
 
     @Override
+    @Transactional
+    public void resolver(String codigo, boolean aprobado) {
+        if (codigo == null || codigo.isBlank()) return;
+        repository.findByCodigo(codigo).ifPresent(s -> {
+            if (s.getJiraKey() != null && !s.getJiraKey().isBlank()) {
+                jiraClient.transition(s.getJiraKey(), aprobado);
+            }
+        });
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<SolicitudResponse> getAll() {
         return repository.findAll().stream().map(mapper::toResponse).toList();

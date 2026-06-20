@@ -10,6 +10,9 @@ public interface SolicitudService {
     /** Registra una solicitud recibida por evento y crea su ticket en Jira. */
     SolicitudResponse registrar(SolicitudCreatedEvent event, String tipoDesdeRouting);
 
+    /** Resuelve una solicitud (por código) transicionando su ticket en Jira. */
+    void resolver(String codigo, boolean aprobado);
+
     List<SolicitudResponse> getAll();
 
     SolicitudResponse getById(Long id);
