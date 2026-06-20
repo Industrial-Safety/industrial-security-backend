@@ -71,9 +71,9 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.POST, "/api/v1/users/change-password").authenticated()
 
                         // Solicitudes de ACCESO (cambio de rol) — ANTES de los wildcards /users/{id} y /users/**
-                        // Solicitar el ascenso: Jefe de Seguridad o Admin (no el propio usuario)
+                        // Solicitar el ascenso: Gerencia (registra la solicitud), Jefe de Seguridad o Admin
                         .pathMatchers(HttpMethod.POST, "/api/v1/users/role-requests").hasAnyRole(
-                                Role.JEFE_SEGURIDAD.name(), Role.ADMINISTRADOR.name()
+                                Role.GERENCIA_GENERAL.name(), Role.JEFE_SEGURIDAD.name(), Role.ADMINISTRADOR.name()
                         )
                         // Revisar y aprobar/rechazar: Gerencia (decisión de negocio) o Admin
                         .pathMatchers(HttpMethod.GET, "/api/v1/users/role-requests", "/api/v1/users/role-requests/**").hasAnyRole(
@@ -111,9 +111,9 @@ public class SecurityConfig {
                                 Role.TRABAJADOR.name(), Role.MARKETING.name(), Role.JEFE_SEGURIDAD.name(),
                                 Role.GERENCIA_GENERAL.name(), Role.LOGISTICA_ALMACEN.name()
                         )
-                        // Lista de usuarios (combo box de TRABAJADOR para el jefe de seguridad)
+                        // Lista de usuarios (combo box de TRABAJADOR para gerencia / jefe de seguridad)
                         .pathMatchers(HttpMethod.GET, "/api/v1/users").hasAnyRole(
-                                Role.ADMINISTRADOR.name(), Role.JEFE_SEGURIDAD.name()
+                                Role.ADMINISTRADOR.name(), Role.JEFE_SEGURIDAD.name(), Role.GERENCIA_GENERAL.name()
                         )
                         .pathMatchers(HttpMethod.GET, "/api/v1/users/**").hasAnyRole(
                                 Role.ADMINISTRADOR.name()
