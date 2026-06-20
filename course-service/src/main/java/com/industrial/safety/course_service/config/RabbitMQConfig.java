@@ -18,6 +18,9 @@ public class RabbitMQConfig {
     public static final String ALERT_PRICE_APPROVED_KEY = "event.alert.price.approved";
     public static final String ALERT_PRICE_REJECTED_KEY = "event.alert.price.rejected";
 
+    // Routing key consumido por solicitudes-service (event.solicitud.#) para crear el ticket Jira
+    public static final String SOLICITUD_SERVICIO_ROUTING_KEY = "event.solicitud.servicio";
+
     @Bean
     MessageConverter jsonMessageConverter() {
         return new JacksonJsonMessageConverter();

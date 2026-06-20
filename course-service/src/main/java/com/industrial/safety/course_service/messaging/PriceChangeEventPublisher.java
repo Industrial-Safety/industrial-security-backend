@@ -1,6 +1,7 @@
 package com.industrial.safety.course_service.messaging;
 
 import com.industrial.safety.course_service.config.RabbitMQConfig;
+import com.industrial.safety.course_service.dto.SolicitudCreatedEvent;
 import com.industrial.safety.course_service.model.PriceChangeRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,6 +9,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.util.Map;
 
 @Slf4j
@@ -34,6 +36,36 @@ public class PriceChangeEventPublisher {
                 emailPayload
         );
         log.info("Published price change request event for course {}", req.getCourseId());
+    }
+
+    /**
+     * Publica la solicitud de cambio de precio como evento ITIL tipo SERVICIO,
+     * para que solicitudes-service la registre y genere el ticket en Jira.
+     * A prueba de fallos: si RabbitMQ no responde, no interrumpe la solicitud.
+     */
+    public void publishSolicitud(PriceChangeRequest req) {
+        try {
+            SolicitudCreatedEvent event = new SolicitudCreatedEvent(
+                    "SC-" + System.currentTimeMillis(),
+                    "SERVICIO",
+                    "Cambio de precio - " + req.getCourseTitle(),
+                    req.getRequesterName(),
+                    "course-service",
+                    "Media",
+                    buildSummary(req),
+                    LocalDate.now()
+            );
+            rabbitTemplate.convertAndSend(
+                    RabbitMQConfig.PLATFORM_EXCHANGE,
+                    RabbitMQConfig.SOLICITUD_SERVICIO_ROUTING_KEY,
+                    event
+            );
+            log.info("Solicitud de cambio de precio publicada (Jira): codigo={} course={}",
+                    event.codigo(), req.getCourseId());
+        } catch (Exception e) {
+            log.warn("No se pudo publicar la solicitud de cambio de precio para course {}: {}",
+                    req.getCourseId(), e.getMessage());
+        }
     }
 
     public void publishApproved(PriceChangeRequest req) {

@@ -1,0 +1,38 @@
+{
+  "family": "ngrok",
+  "executionRoleArn": "arn:aws:iam::560904638369:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::560904638369:role/ecsTaskExecutionRole",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "containerDefinitions": [
+    {
+      "name": "ngrok",
+      "image": "ngrok/ngrok:latest",
+      "essential": true,
+      "command": ["http", "http://api-gateway.industrial-security:9000", "--log=stdout"],
+      "secrets": [
+        {
+          "name": "NGROK_AUTHTOKEN",
+          "valueFrom": "arn:aws:ssm:us-east-1:560904638369:parameter/config/ngrok/authtoken"
+        }
+      ],
+      "portMappings": [
+        {
+          "containerPort": 4040,
+          "protocol": "tcp",
+          "name": "ngrok-4040-tcp"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/ngrok",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

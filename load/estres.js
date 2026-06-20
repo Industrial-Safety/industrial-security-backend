@@ -10,7 +10,7 @@ import { check, sleep } from 'k6';
 // ---- CONFIG HARDCODEADA ----
 // Gateway por IP publica DIRECTA (sin ngrok = sin throttling, estres real).
 // OJO: esta IP cambia cada vez que el gateway reinicia; si falla, pide la IP nueva.
-const GATEWAY  = 'http://54.174.171.18:9000';
+const GATEWAY  = 'http://44.214.44.221:9000';
 const KEYCLOAK = 'http://industrial-safety.duckdns.org:8080';
 const CLIENT_ID     = 'industrial-safety-client';
 const CLIENT_SECRET = '<<PEGA_AQUI_EL_CLIENT_SECRET>>';  // <-- rellena antes de correr

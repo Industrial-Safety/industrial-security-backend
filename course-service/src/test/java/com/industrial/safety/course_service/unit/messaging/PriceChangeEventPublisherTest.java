@@ -1,6 +1,7 @@
 package com.industrial.safety.course_service.unit.messaging;
 
 import com.industrial.safety.course_service.config.RabbitMQConfig;
+import com.industrial.safety.course_service.dto.SolicitudCreatedEvent;
 import com.industrial.safety.course_service.messaging.PriceChangeEventPublisher;
 import com.industrial.safety.course_service.model.PriceChangeRequest;
 import com.industrial.safety.course_service.model.PriceChangeRequest.PriceChangeStatus;
@@ -20,8 +21,10 @@ import java.time.Instant;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willThrow;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PriceChangeEventPublisher — Pruebas Unitarias")
@@ -79,6 +82,35 @@ class PriceChangeEventPublisherTest {
 
         Map<String, Object> payload = (Map<String, Object>) messageCaptor.getValue();
         assertThat(payload.get("to")).isEqualTo("gerencia@test.com");
+    }
+
+    // ── publishSolicitud (solicitud ITIL → ticket Jira) ────────
+
+    @Test
+    @DisplayName("publishSolicitud: publica event.solicitud.servicio con tipo SERVICIO")
+    void publishSolicitud_sendsServiceRequestEvent() {
+        publisher.publishSolicitud(request);
+
+        then(rabbitTemplate).should().convertAndSend(
+                eq(RabbitMQConfig.PLATFORM_EXCHANGE),
+                eq(RabbitMQConfig.SOLICITUD_SERVICIO_ROUTING_KEY),
+                messageCaptor.capture()
+        );
+
+        SolicitudCreatedEvent ev = (SolicitudCreatedEvent) messageCaptor.getValue();
+        assertThat(ev.tipo()).isEqualTo("SERVICIO");
+        assertThat(ev.microservicioOrigen()).isEqualTo("course-service");
+        assertThat(ev.subtipo()).contains("Seguridad Industrial");
+    }
+
+    @Test
+    @DisplayName("publishSolicitud: si RabbitMQ falla NO propaga la excepción (rama catch)")
+    void publishSolicitud_swallowsExceptionOnFailure() {
+        willThrow(new RuntimeException("MQ down"))
+                .given(rabbitTemplate)
+                .convertAndSend(anyString(), anyString(), any(SolicitudCreatedEvent.class));
+
+        assertThatCode(() -> publisher.publishSolicitud(request)).doesNotThrowAnyException();
     }
 
     // ── publishApproved ────────────────────────────────────────

@@ -43,7 +43,8 @@ public class PriceChangeRequestServiceImpl implements PriceChangeRequestService 
                 .build();
 
         PriceChangeRequest saved = repository.save(entity);
-        publisher.publishNewRequest(saved);
+        publisher.publishNewRequest(saved);      // email a gerencia (notification-service)
+        publisher.publishSolicitud(saved);       // solicitud ITIL -> ticket Jira (solicitudes-service)
         log.info("Price change request created: {} for course {}", saved.getId(), saved.getCourseId());
         return toResponse(saved);
     }
