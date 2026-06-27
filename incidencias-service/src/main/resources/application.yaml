@@ -4,12 +4,17 @@ server:
 spring:
   application:
     name: incidencias-service
+  config:
+    import: "aws-parameterstore:/config/application/,aws-parameterstore:/config/incidencias-service/"
   threads:
     virtual:
       enabled: true
   cloud:
     config:
       enabled: false
+    aws:
+      parameterstore:
+        region: us-east-1
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/incidencias-db}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
@@ -46,10 +51,12 @@ incidencias:
   notificaciones:
     enabled: ${INCIDENCIAS_NOTIF_ENABLED:true}
 
-# Integracion con Freshservice (mesa de ayuda externa - ITSM).
+# Integracion con Jira Cloud (mesa de ayuda externa - ITSM).
 # enabled=false por defecto: las incidencias se gestionan igual en la BD sin ticket externo.
-freshservice:
-  enabled: ${FRESHSERVICE_ENABLED:false}
-  base-url: ${FRESHSERVICE_BASE_URL:https://tudominio.freshservice.com}
-  api-key: ${FRESHSERVICE_API_KEY:}
-  default-requester-email: ${FRESHSERVICE_REQUESTER_EMAIL:ricardoismael777@gmail.com}
+jira:
+  enabled: ${JIRA_ENABLED:false}
+  base-url: ${JIRA_BASE_URL:https://integrador.atlassian.net}
+  email: ${JIRA_EMAIL:}
+  api-token: ${JIRA_API_TOKEN:}
+  project-key: ${JIRA_PROJECT_KEY:GES}
+  issue-type: ${JIRA_ISSUE_TYPE:Task}

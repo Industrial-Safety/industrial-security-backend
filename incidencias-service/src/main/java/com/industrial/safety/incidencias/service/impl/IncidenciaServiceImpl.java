@@ -9,7 +9,7 @@ import com.industrial.safety.incidencias.entity.Prioridad;
 import com.industrial.safety.incidencias.entity.SyncEstado;
 import com.industrial.safety.incidencias.exception.EstadoInvalidoException;
 import com.industrial.safety.incidencias.exception.ResourceNotFoundException;
-import com.industrial.safety.incidencias.integration.FreshserviceClient;
+import com.industrial.safety.incidencias.integration.JiraClient;
 import com.industrial.safety.incidencias.mapper.IncidenciaMapper;
 import com.industrial.safety.incidencias.messaging.IncidenciaEventPublisher;
 import com.industrial.safety.incidencias.repository.IncidenciaRepository;
@@ -31,7 +31,7 @@ public class IncidenciaServiceImpl implements IncidenciaService {
     private final IncidenciaRepository repository;
     private final IncidenciaMapper mapper;
     private final IncidenciaEventPublisher publisher;
-    private final FreshserviceClient freshservice;
+    private final JiraClient jiraClient;
 
     @Override
     @Transactional
@@ -134,7 +134,7 @@ public class IncidenciaServiceImpl implements IncidenciaService {
     @Transactional
     public void procesarSync(Long id) {
         Incidencia inc = buscar(id);
-        FreshserviceClient.FreshserviceTicket ticket = freshservice.crearTicket(inc);
+        JiraClient.JiraTicket ticket = jiraClient.crearTicket(inc);
         inc.setFreshserviceTicketId(ticket.id());
         inc.setFreshserviceUrl(ticket.url());
         inc.setSyncEstado(SyncEstado.SINCRONIZADO);

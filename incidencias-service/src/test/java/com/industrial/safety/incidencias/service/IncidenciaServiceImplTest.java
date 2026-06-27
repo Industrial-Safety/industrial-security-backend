@@ -10,7 +10,7 @@ import com.industrial.safety.incidencias.entity.Prioridad;
 import com.industrial.safety.incidencias.entity.SyncEstado;
 import com.industrial.safety.incidencias.exception.EstadoInvalidoException;
 import com.industrial.safety.incidencias.exception.ResourceNotFoundException;
-import com.industrial.safety.incidencias.integration.FreshserviceClient;
+import com.industrial.safety.incidencias.integration.JiraClient;
 import com.industrial.safety.incidencias.mapper.IncidenciaMapper;
 import com.industrial.safety.incidencias.messaging.IncidenciaEventPublisher;
 import com.industrial.safety.incidencias.repository.IncidenciaRepository;
@@ -37,7 +37,7 @@ class IncidenciaServiceImplTest {
     @Mock IncidenciaRepository repository;
     @Mock IncidenciaMapper mapper;
     @Mock IncidenciaEventPublisher publisher;
-    @Mock FreshserviceClient freshservice;
+    @Mock JiraClient jiraClient;
 
     @InjectMocks IncidenciaServiceImpl service;
 
@@ -148,13 +148,13 @@ class IncidenciaServiceImplTest {
     void procesarSyncExito() {
         Incidencia inc = Incidencia.builder().id(4L).codigo("INC-2026-004").build();
         when(repository.findById(4L)).thenReturn(Optional.of(inc));
-        when(freshservice.crearTicket(inc))
-                .thenReturn(new FreshserviceClient.FreshserviceTicket(123L, "https://fs/a/tickets/123"));
+        when(jiraClient.crearTicket(inc))
+                .thenReturn(new JiraClient.JiraTicket(123L, "GES-1", "https://integrador.atlassian.net/browse/GES-1"));
 
         service.procesarSync(4L);
 
         assertThat(inc.getFreshserviceTicketId()).isEqualTo(123L);
-        assertThat(inc.getFreshserviceUrl()).isEqualTo("https://fs/a/tickets/123");
+        assertThat(inc.getFreshserviceUrl()).isEqualTo("https://integrador.atlassian.net/browse/GES-1");
         assertThat(inc.getSyncEstado()).isEqualTo(SyncEstado.SINCRONIZADO);
     }
 

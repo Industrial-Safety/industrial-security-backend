@@ -1,7 +1,7 @@
 package com.industrial.safety.incidencias.messaging;
 
 import com.industrial.safety.incidencias.config.RabbitMQConfig;
-import com.industrial.safety.incidencias.integration.FreshserviceDisabledException;
+import com.industrial.safety.incidencias.integration.JiraDisabledException;
 import com.industrial.safety.incidencias.service.IncidenciaService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,8 +28,8 @@ public class IncidenciaSyncConsumer {
     public void consumeSync(@Payload SyncIncidenciaEvent event) {
         try {
             service.procesarSync(event.incidenciaId());
-        } catch (FreshserviceDisabledException e) {
-            log.warn("[sync] Freshservice deshabilitado para incidencia {}: {}",
+        } catch (JiraDisabledException e) {
+            log.warn("[sync] Jira deshabilitado para incidencia {}: {}",
                     event.incidenciaId(), e.getMessage());
             service.marcarSyncError(event.incidenciaId(), e.getMessage());
             // se confirma (no se reintenta ni va a DLQ)
@@ -41,6 +41,6 @@ public class IncidenciaSyncConsumer {
     public void consumeDlq(@Payload SyncIncidenciaEvent event) {
         log.error("[sync-dlq] Sincronización agotó reintentos para incidencia {}", event.incidenciaId());
         service.marcarSyncError(event.incidenciaId(),
-                "La sincronización con Freshservice falló tras los reintentos");
+                "La sincronización con Jira falló tras los reintentos");
     }
 }
