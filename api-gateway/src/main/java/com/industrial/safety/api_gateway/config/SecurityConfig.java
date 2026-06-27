@@ -204,6 +204,23 @@ public class SecurityConfig {
                                 Role.JEFE_SEGURIDAD.name(), Role.ADMINISTRADOR.name(), Role.GERENCIA_GENERAL.name()
                         )
 
+                        // Incidencias TI (gestión de incidentes de la plataforma)
+                        // Cualquier rol autenticado reporta y ve las suyas; el Admin (TI) atiende.
+                        .pathMatchers(HttpMethod.POST, "/api/v1/incidencias").authenticated()
+                        .pathMatchers(HttpMethod.GET, "/api/v1/incidencias/mias").authenticated()
+                        .pathMatchers(HttpMethod.PATCH, "/api/v1/incidencias/*/aceptar").hasRole(
+                                Role.ADMINISTRADOR.name()
+                        )
+                        .pathMatchers(HttpMethod.PATCH, "/api/v1/incidencias/*/resolver").hasRole(
+                                Role.ADMINISTRADOR.name()
+                        )
+                        .pathMatchers(HttpMethod.PATCH, "/api/v1/incidencias/*/sincronizar").hasRole(
+                                Role.ADMINISTRADOR.name()
+                        )
+                        .pathMatchers(HttpMethod.GET, "/api/v1/incidencias", "/api/v1/incidencias/**").hasRole(
+                                Role.ADMINISTRADOR.name()
+                        )
+
                         .anyExchange().authenticated())
                 .oauth2ResourceServer(o -> o
                         .jwt(jwtSpec -> jwtSpec.jwtAuthenticationConverter(reactiveJwtAuthenticationConverterAdapter())));

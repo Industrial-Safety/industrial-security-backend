@@ -1,0 +1,55 @@
+server:
+  port: 8087
+
+spring:
+  application:
+    name: incidencias-service
+  threads:
+    virtual:
+      enabled: true
+  cloud:
+    config:
+      enabled: false
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/incidencias-db}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:admin}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 5000
+      max-lifetime: 900000
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:guest}
+    password: ${SPRING_RABBITMQ_PASSWORD:guest}
+    ssl:
+      enabled: ${SPRING_RABBITMQ_SSL_ENABLED:false}
+    listener:
+      simple:
+        # Reintentos antes de mandar el mensaje de sync a la DLQ
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 2000
+          multiplier: 2
+          max-interval: 10000
+        default-requeue-rejected: false
+
+# Habilita/silencia la publicacion de notificaciones (WebSocket/email) al reportero.
+incidencias:
+  notificaciones:
+    enabled: ${INCIDENCIAS_NOTIF_ENABLED:true}
+
+# Integracion con Freshservice (mesa de ayuda externa - ITSM).
+# enabled=false por defecto: las incidencias se gestionan igual en la BD sin ticket externo.
+freshservice:
+  enabled: ${FRESHSERVICE_ENABLED:false}
+  base-url: ${FRESHSERVICE_BASE_URL:https://tudominio.freshservice.com}
+  api-key: ${FRESHSERVICE_API_KEY:}
+  default-requester-email: ${FRESHSERVICE_REQUESTER_EMAIL:ricardoismael777@gmail.com}

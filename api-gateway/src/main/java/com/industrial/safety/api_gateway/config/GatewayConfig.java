@@ -18,6 +18,7 @@ public class GatewayConfig {
     private static final String EXAM_SERVICE      = "http://exam-service.industrial-security:8086";
     private static final String PURCHASE_SERVICE  = "http://purchase-service.industrial-security:8080";
     private static final String SAFETY_SERVICE    = "http://safety-service.industrial-security:8099";
+    private static final String INCIDENCIAS_SERVICE = "http://incidencias-service.industrial-security:8087";
 
     @Bean
     public RouteLocator routeLocator(RouteLocatorBuilder builder) {
@@ -56,6 +57,9 @@ public class GatewayConfig {
                         .path("/api/v1/incidents", "/api/v1/incidents/**",
                               "/api/v1/safety-score", "/api/v1/safety-score/**")
                         .uri(SAFETY_SERVICE))
+                .route("incidencias-service", r -> r
+                        .path("/api/v1/incidencias", "/api/v1/incidencias/**")
+                        .uri(INCIDENCIAS_SERVICE))
                 .route("notification-ws", r -> r
                         .path("/ws/**")
                         .uri(NOTIFICATION_WS))

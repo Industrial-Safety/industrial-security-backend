@@ -1,0 +1,112 @@
+package com.industrial.safety.incidencias.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Registro central de una incidencia de TI de la plataforma.
+ * NO confundir con {@code incident} (infraccion de seguridad por camara).
+ */
+@Entity
+@Table(name = "incidencias")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+public class Incidencia {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
+    private Long id;
+
+    /** Codigo legible, ej. INC-2026-001. Se asigna tras persistir. */
+    @Column(unique = true)
+    private String codigo;
+
+    // ── Quien reporta ────────────────────────────────────────────────
+    private String reporterId;     // keycloakId
+    private String reporterName;
+    private String reporterRole;
+
+    // ── Clasificacion ────────────────────────────────────────────────
+    @Enumerated(EnumType.STRING)
+    private Categoria categoria;
+
+    /** Subtipo segun el rol, ej. "Video no carga". */
+    private String tipo;
+
+    private String titulo;
+
+    @Column(length = 2000)
+    private String descripcion;
+
+    // ── Priorizacion ─────────────────────────────────────────────────
+    @Enumerated(EnumType.STRING)
+    private Nivel impacto;
+
+    @Enumerated(EnumType.STRING)
+    private Nivel urgencia;
+
+    /** Calculada en servidor a partir de impacto x urgencia. Nunca se acepta del cliente. */
+    @Enumerated(EnumType.STRING)
+    private Prioridad prioridad;
+
+    // ── Evidencia (URLs en S3) ───────────────────────────────────────
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "incidencia_evidencias", joinColumns = @JoinColumn(name = "incidencia_id"))
+    @Column(name = "url", length = 1000)
+    @Builder.Default
+    private List<String> evidenciaUrls = new ArrayList<>();
+
+    // ── Ciclo de vida ────────────────────────────────────────────────
+    @Enumerated(EnumType.STRING)
+    private EstadoIncidencia estado;
+
+    private String atendidoPor;     // keycloakId del admin/TI
+    private Instant aceptadoEn;
+
+    @Column(length = 2000)
+    private String resolucionDescripcion;
+
+    private Boolean resueltoBien;
+    private Instant resueltoEn;
+
+    /** Opcional/reservado: enlace a un hilo de chat para seguimiento. */
+    private String conversationId;
+
+    // ── Sincronización externa (Freshservice) ────────────────────────
+    private Long freshserviceTicketId;
+    private String freshserviceUrl;
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private SyncEstado syncEstado = SyncEstado.NO_SINCRONIZADO;
+
+    @Column(length = 1000)
+    private String syncError;
+
+    private Instant createdAt;
+    private Instant updatedAt;
+
+    @PrePersist
+    void onCreate() {
+        Instant now = Instant.now();
+        this.createdAt = now;
+        this.updatedAt = now;
+        if (this.syncEstado == null) {
+            this.syncEstado = SyncEstado.NO_SINCRONIZADO;
+        }
+    }
+
+    @PreUpdate
+    void onUpdate() {
+        this.updatedAt = Instant.now();
+    }
+}
