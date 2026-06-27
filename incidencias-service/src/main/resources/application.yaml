@@ -16,7 +16,7 @@ spring:
       parameterstore:
         region: us-east-1
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/incidencias-db}
+    url: jdbc:postgresql://db-industrial-safety.cavogy2wu2yn.us-east-1.rds.amazonaws.com:5432/incidencias-db?sslmode=require&tcpKeepAlive=true
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:admin}
     hikari:
@@ -55,8 +55,8 @@ incidencias:
 # enabled=false por defecto: las incidencias se gestionan igual en la BD sin ticket externo.
 jira:
   enabled: ${JIRA_ENABLED:false}
-  base-url: ${JIRA_BASE_URL:https://integrador.atlassian.net}
+  base-url: ${JIRA_BASE_URL:https://industrialsafety.atlassian.net}
   email: ${JIRA_EMAIL:}
   api-token: ${JIRA_API_TOKEN:}
   project-key: ${JIRA_PROJECT_KEY:GES}
-  issue-type: ${JIRA_ISSUE_TYPE:Task}
+  issue-type: ${JIRA_ISSUE_TYPE:Tarea}

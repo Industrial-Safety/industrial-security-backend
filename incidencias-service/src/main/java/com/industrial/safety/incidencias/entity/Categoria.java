@@ -7,5 +7,6 @@ public enum Categoria {
     BASE_DATOS,
     REDES_COMUNICACIONES,
     SEGURIDAD,
+    DOCUMENTACION,
     OTROS
 }
