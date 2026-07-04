@@ -1,6 +1,5 @@
 package com.industrial.safety.incidencias.service.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.industrial.safety.incidencias.entity.Categoria;
 import com.industrial.safety.incidencias.entity.Incidencia;
 import com.industrial.safety.incidencias.entity.Nivel;
@@ -15,6 +14,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.ConversationRole;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseResponse;
 import software.amazon.awssdk.services.bedrockruntime.model.Message;
 import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Optional;
 

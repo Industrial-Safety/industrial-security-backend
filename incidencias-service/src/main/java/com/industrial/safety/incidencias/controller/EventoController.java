@@ -1,7 +1,6 @@
 package com.industrial.safety.incidencias.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.industrial.safety.incidencias.dto.AlarmaCloudWatch;
 import com.industrial.safety.incidencias.dto.IncidenciaResponse;
 import com.industrial.safety.incidencias.service.IncidenciaService;
@@ -12,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.server.ResponseStatusException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Map;
 
@@ -37,36 +37,57 @@ public class EventoController {
     @Value("${incidencias.eventos.token:}")
     private String tokenEsperado;
 
+    /** Sobre de SNS (subconjunto). Los nombres van con @JsonProperty porque SNS usa PascalCase. */
+    private record SobreSNS(
+            @JsonProperty("Type") String type,
+            @JsonProperty("Message") String message,
+            @JsonProperty("SubscribeURL") String subscribeUrl) {
+    }
+
+    /** Payload de la alarma de CloudWatch (subconjunto). */
+    private record AlarmaPayload(
+            @JsonProperty("AlarmName") String alarmName,
+            @JsonProperty("NewStateValue") String newStateValue,
+            @JsonProperty("NewStateReason") String newStateReason,
+            @JsonProperty("Trigger") Trigger trigger) {
+        private record Trigger(
+                @JsonProperty("Namespace") String namespace,
+                @JsonProperty("MetricName") String metricName,
+                @JsonProperty("Threshold") Double threshold) {
+        }
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.ACCEPTED)
     public Map<String, Object> recibir(
-            @RequestBody JsonNode body,
+            @RequestBody String rawBody,
             @RequestHeader(value = "x-amz-sns-message-type", required = false) String snsType,
             @RequestHeader(value = "X-Evento-Token", required = false) String tokenHeader,
             @RequestParam(value = "token", required = false) String tokenQuery) {
 
         validarToken(tokenHeader != null ? tokenHeader : tokenQuery);
 
-        String tipo = snsType != null ? snsType
-                : (body.hasNonNull("Type") ? body.get("Type").asText() : null);
+        SobreSNS sobre = leer(rawBody, SobreSNS.class);
+        String tipo = snsType != null ? snsType : sobre.type();
 
         // 1) Confirmación de suscripción SNS: hay que visitar el SubscribeURL una sola vez.
         if ("SubscriptionConfirmation".equals(tipo)) {
-            String url = body.path("SubscribeURL").asText(null);
-            if (url != null) {
-                http.get().uri(url).retrieve().toBodilessEntity();
+            if (sobre.subscribeUrl() != null) {
+                http.get().uri(sobre.subscribeUrl()).retrieve().toBodilessEntity();
                 log.info("[eventos] Suscripción SNS confirmada");
             }
             return Map.of("status", "subscription-confirmed");
         }
 
-        // 2) El payload de la alarma viaja envuelto en "Message" (string JSON) si es Notification.
-        JsonNode alarmaNode = body;
-        if ("Notification".equals(tipo)) {
-            alarmaNode = leerJson(body.path("Message").asText("{}"));
-        }
+        // 2) La alarma viaja envuelta en "Message" (Notification) o directa (POST de prueba).
+        String alarmaJson = sobre.message() != null ? sobre.message() : rawBody;
+        AlarmaPayload p = leer(alarmaJson, AlarmaPayload.class);
+        AlarmaCloudWatch alarma = new AlarmaCloudWatch(
+                p.alarmName(), p.newStateValue(), p.newStateReason(),
+                p.trigger() != null ? p.trigger().namespace() : null,
+                p.trigger() != null ? p.trigger().metricName() : null,
+                p.trigger() != null ? p.trigger().threshold() : null);
 
-        AlarmaCloudWatch alarma = parseAlarma(alarmaNode);
         if (!"ALARM".equalsIgnoreCase(alarma.estado())) {
             log.debug("[eventos] Alarma '{}' en estado {} -> no genera incidencia", alarma.alarmName(), alarma.estado());
             return Map.of("status", "ignorado", "estado", String.valueOf(alarma.estado()));
@@ -88,22 +109,11 @@ public class EventoController {
         }
     }
 
-    private AlarmaCloudWatch parseAlarma(JsonNode n) {
-        JsonNode trigger = n.path("Trigger");
-        return new AlarmaCloudWatch(
-                n.path("AlarmName").asText(null),
-                n.path("NewStateValue").asText(null),
-                n.path("NewStateReason").asText(null),
-                trigger.path("Namespace").asText(null),
-                trigger.path("MetricName").asText(null),
-                trigger.hasNonNull("Threshold") ? trigger.get("Threshold").asDouble() : null);
-    }
-
-    private JsonNode leerJson(String texto) {
+    private <T> T leer(String texto, Class<T> tipo) {
         try {
-            return json.readTree(texto);
+            return json.readValue(texto, tipo);
         } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Message no es JSON válido");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cuerpo no es JSON válido");
         }
     }
 }
