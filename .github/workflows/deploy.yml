@@ -44,6 +44,7 @@ jobs:
           - { service: payment-service,      ecr: industrial-security/payment-service,      ecs: payment-service }
           - { service: user-service,         ecr: industrial-security/user-service,         ecs: user-service }
           - { service: notification-service, ecr: industrial-security/notification-service, ecs: notification-service }
+          - { service: incidencias-service,  ecr: industrial-security/incidencias-service,  ecs: incidencias-service }
           - { service: api-gateway,          ecr: industrial-security/api-gateway,          ecs: api-gateway }
 
     steps:
