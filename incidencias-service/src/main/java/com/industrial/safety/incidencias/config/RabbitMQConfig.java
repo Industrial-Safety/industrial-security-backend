@@ -32,6 +32,11 @@ public class RabbitMQConfig {
     public static final String SYNC_DLQ = "incidencias.sync.dlq";
     public static final String RK_SYNC = "event.incidencia.sync";
 
+    /** Triaje asistido por IA (lo consume este servicio, async tras registrar). */
+    public static final String TRIAGE_QUEUE = "incidencias.triage.queue";
+    public static final String TRIAGE_DLQ = "incidencias.triage.dlq";
+    public static final String RK_TRIAGE = "event.incidencia.triage";
+
     @Bean
     MessageConverter jsonMessageConverter() {
         return new JacksonJsonMessageConverter();
@@ -68,5 +73,28 @@ public class RabbitMQConfig {
     @Bean
     Binding syncDlqBinding(Queue syncDeadLetterQueue, TopicExchange deadLetterExchange) {
         return BindingBuilder.bind(syncDeadLetterQueue).to(deadLetterExchange).with(SYNC_DLQ);
+    }
+
+    @Bean
+    Queue triageQueue() {
+        return QueueBuilder.durable(TRIAGE_QUEUE)
+                .withArgument("x-dead-letter-exchange", DLX_EXCHANGE)
+                .withArgument("x-dead-letter-routing-key", TRIAGE_DLQ)
+                .build();
+    }
+
+    @Bean
+    Queue triageDeadLetterQueue() {
+        return QueueBuilder.durable(TRIAGE_DLQ).build();
+    }
+
+    @Bean
+    Binding triageBinding(Queue triageQueue, TopicExchange platformExchange) {
+        return BindingBuilder.bind(triageQueue).to(platformExchange).with(RK_TRIAGE);
+    }
+
+    @Bean
+    Binding triageDlqBinding(Queue triageDeadLetterQueue, TopicExchange deadLetterExchange) {
+        return BindingBuilder.bind(triageDeadLetterQueue).to(deadLetterExchange).with(TRIAGE_DLQ);
     }
 }

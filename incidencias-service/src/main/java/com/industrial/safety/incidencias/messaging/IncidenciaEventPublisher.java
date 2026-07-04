@@ -41,6 +41,21 @@ public class IncidenciaEventPublisher {
                 new SyncIncidenciaEvent(incidenciaId));
     }
 
+    /**
+     * Encola el triaje asistido por IA. Es best-effort: si RabbitMQ falla, se loguea y NO se
+     * propaga — la incidencia ya quedó registrada y clasificada por reglas; el triaje solo la refina.
+     */
+    public void solicitarTriaje(Long incidenciaId) {
+        try {
+            rabbitTemplate.convertAndSend(
+                    RabbitMQConfig.PLATFORM_EXCHANGE, RabbitMQConfig.RK_TRIAGE,
+                    new TriajeIncidenciaEvent(incidenciaId));
+        } catch (RuntimeException ex) {
+            log.warn("[incidencia-triaje] No se pudo encolar el triaje de la incidencia {}: {}",
+                    incidenciaId, ex.getMessage());
+        }
+    }
+
     public void notificarResuelta(Incidencia inc) {
         String estado = Boolean.TRUE.equals(inc.getResueltoBien()) ? "resuelta" : "cerrada sin éxito";
         publicar(RabbitMQConfig.RK_ALERT_RESUELTA, new WebAlertRequest(

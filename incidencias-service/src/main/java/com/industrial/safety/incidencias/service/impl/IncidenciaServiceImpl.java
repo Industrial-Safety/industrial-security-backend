@@ -3,8 +3,11 @@ package com.industrial.safety.incidencias.service.impl;
 import com.industrial.safety.incidencias.dto.CrearIncidenciaRequest;
 import com.industrial.safety.incidencias.dto.IncidenciaResponse;
 import com.industrial.safety.incidencias.dto.ResolverIncidenciaRequest;
+import com.industrial.safety.incidencias.entity.Categoria;
 import com.industrial.safety.incidencias.entity.EstadoIncidencia;
 import com.industrial.safety.incidencias.entity.Incidencia;
+import com.industrial.safety.incidencias.entity.Nivel;
+import com.industrial.safety.incidencias.entity.OrigenClasificacion;
 import com.industrial.safety.incidencias.entity.Prioridad;
 import com.industrial.safety.incidencias.entity.SyncEstado;
 import com.industrial.safety.incidencias.exception.EstadoInvalidoException;
@@ -13,6 +16,8 @@ import com.industrial.safety.incidencias.integration.JiraClient;
 import com.industrial.safety.incidencias.mapper.IncidenciaMapper;
 import com.industrial.safety.incidencias.messaging.IncidenciaEventPublisher;
 import com.industrial.safety.incidencias.repository.IncidenciaRepository;
+import com.industrial.safety.incidencias.service.ClasificadorIA;
+import com.industrial.safety.incidencias.service.ClasificadorReglas;
 import com.industrial.safety.incidencias.service.IncidenciaService;
 import com.industrial.safety.incidencias.service.PrioridadCalculator;
 import lombok.RequiredArgsConstructor;
@@ -28,17 +33,37 @@ import java.util.List;
 @RequiredArgsConstructor
 public class IncidenciaServiceImpl implements IncidenciaService {
 
+    /** Umbral de confianza de la IA: por debajo se marca la incidencia para revisión manual. */
+    private static final double UMBRAL_CONFIANZA = 0.7;
+
     private final IncidenciaRepository repository;
     private final IncidenciaMapper mapper;
     private final IncidenciaEventPublisher publisher;
     private final JiraClient jiraClient;
+    private final ClasificadorIA clasificadorIA;
 
     @Override
     @Transactional
     public IncidenciaResponse crear(CrearIncidenciaRequest request, String reporterId) {
         Incidencia entity = mapper.toEntity(request);
         entity.setReporterId(reporterId);
-        entity.setPrioridad(PrioridadCalculator.calcular(request.impacto(), request.urgencia()));
+
+        // El usuario solo describe el problema: si no envió categoría/niveles, los rellena el
+        // motor de reglas (fallback determinista). Así la incidencia SIEMPRE nace clasificada.
+        // La IA los refinará después de forma asíncrona (Paso 4).
+        ClasificadorReglas.Sugerencia sugerida =
+                ClasificadorReglas.clasificar(request.descripcion(), request.contextoError());
+        boolean categoriaDelUsuario = request.categoria() != null;
+        Categoria categoria = categoriaDelUsuario ? request.categoria() : sugerida.categoria();
+        Nivel impacto = request.impacto() != null ? request.impacto() : sugerida.impacto();
+        Nivel urgencia = request.urgencia() != null ? request.urgencia() : sugerida.urgencia();
+
+        entity.setCategoria(categoria);
+        entity.setImpacto(impacto);
+        entity.setUrgencia(urgencia);
+        entity.setPrioridad(PrioridadCalculator.calcular(impacto, urgencia));
+        entity.setCategoriaOrigen(categoriaDelUsuario ? OrigenClasificacion.HUMANO : OrigenClasificacion.REGLA);
+        entity.setRequiereRevision(!categoriaDelUsuario);
         entity.setEstado(EstadoIncidencia.REGISTRADO);
 
         Incidencia guardada = repository.save(entity);
@@ -46,6 +71,8 @@ public class IncidenciaServiceImpl implements IncidenciaService {
         guardada.setCodigo(generarCodigo(guardada));
 
         publisher.notificarRegistrada(guardada);
+        // Refinamiento asíncrono por IA (best-effort): no bloquea la respuesta al reportero.
+        publisher.solicitarTriaje(guardada.getId());
         return mapper.toResponse(guardada);
     }
 
@@ -147,6 +174,27 @@ public class IncidenciaServiceImpl implements IncidenciaService {
         repository.findById(id).ifPresent(inc -> {
             inc.setSyncEstado(SyncEstado.ERROR);
             inc.setSyncError(mensaje);
+        });
+    }
+
+    @Override
+    @Transactional
+    public void procesarTriaje(Long id) {
+        Incidencia inc = buscar(id);
+        clasificadorIA.clasificar(inc).ifPresent(r -> {
+            // El diagnóstico siempre es útil para soporte, sin importar quién puso la categoría.
+            inc.setIaDiagnostico(r.diagnostico());
+            inc.setIaConfianza(r.confianza());
+
+            // Solo se sobrescribe la clasificación si NO la eligió un humano explícitamente.
+            if (inc.getCategoriaOrigen() != OrigenClasificacion.HUMANO) {
+                inc.setCategoria(r.categoria());
+                inc.setImpacto(r.impacto());
+                inc.setUrgencia(r.urgencia());
+                inc.setPrioridad(PrioridadCalculator.calcular(r.impacto(), r.urgencia()));
+                inc.setCategoriaOrigen(OrigenClasificacion.IA);
+                inc.setRequiereRevision(r.confianza() < UMBRAL_CONFIANZA);
+            }
         });
     }
 

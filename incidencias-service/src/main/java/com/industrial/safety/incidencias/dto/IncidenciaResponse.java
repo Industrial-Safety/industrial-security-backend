@@ -3,6 +3,7 @@ package com.industrial.safety.incidencias.dto;
 import com.industrial.safety.incidencias.entity.Categoria;
 import com.industrial.safety.incidencias.entity.EstadoIncidencia;
 import com.industrial.safety.incidencias.entity.Nivel;
+import com.industrial.safety.incidencias.entity.OrigenClasificacion;
 import com.industrial.safety.incidencias.entity.Prioridad;
 import com.industrial.safety.incidencias.entity.SyncEstado;
 
@@ -22,6 +23,11 @@ public record IncidenciaResponse(
         Nivel impacto,
         Nivel urgencia,
         Prioridad prioridad,
+        OrigenClasificacion categoriaOrigen,
+        Boolean requiereRevision,
+        Double iaConfianza,
+        String iaDiagnostico,
+        String contextoError,
         List<String> evidenciaUrls,
         EstadoIncidencia estado,
         String atendidoPor,

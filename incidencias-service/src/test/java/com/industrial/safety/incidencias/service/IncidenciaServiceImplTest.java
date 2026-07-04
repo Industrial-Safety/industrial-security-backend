@@ -6,6 +6,7 @@ import com.industrial.safety.incidencias.entity.Categoria;
 import com.industrial.safety.incidencias.entity.EstadoIncidencia;
 import com.industrial.safety.incidencias.entity.Incidencia;
 import com.industrial.safety.incidencias.entity.Nivel;
+import com.industrial.safety.incidencias.entity.OrigenClasificacion;
 import com.industrial.safety.incidencias.entity.Prioridad;
 import com.industrial.safety.incidencias.entity.SyncEstado;
 import com.industrial.safety.incidencias.exception.EstadoInvalidoException;
@@ -38,6 +39,7 @@ class IncidenciaServiceImplTest {
     @Mock IncidenciaMapper mapper;
     @Mock IncidenciaEventPublisher publisher;
     @Mock JiraClient jiraClient;
+    @Mock ClasificadorIA clasificadorIA;
 
     @InjectMocks IncidenciaServiceImpl service;
 
@@ -48,7 +50,7 @@ class IncidenciaServiceImplTest {
         request = new CrearIncidenciaRequest(
                 Categoria.APLICACIONES, "Video no carga", "No carga el curso",
                 "El reproductor queda en blanco", Nivel.ALTO, Nivel.ALTO,
-                null, "Ana Pérez", "ALUMNO");
+                null, "Ana Pérez", "ALUMNO", null);
     }
 
     @Test
@@ -69,7 +71,32 @@ class IncidenciaServiceImplTest {
         assertThat(entity.getPrioridad()).isEqualTo(Prioridad.CRITICA);
         assertThat(entity.getEstado()).isEqualTo(EstadoIncidencia.REGISTRADO);
         assertThat(entity.getCodigo()).matches("INC-\\d{4}-001");
+        assertThat(entity.getCategoriaOrigen()).isEqualTo(OrigenClasificacion.HUMANO);
         verify(publisher).notificarRegistrada(entity);
+    }
+
+    @Test
+    @DisplayName("crear sin categoría: el motor de reglas la clasifica (REGLA + requiereRevision)")
+    void crearClasificaPorReglas() {
+        CrearIncidenciaRequest reqSinCat = new CrearIncidenciaRequest(
+                null, null, "No puedo crear cupones", "Al intentar crear un cupón de descuento me sale un error",
+                null, null, null, "Marketing", "MARKETING", null);
+        Incidencia entity = new Incidencia();
+        when(mapper.toEntity(reqSinCat)).thenReturn(entity);
+        when(repository.save(any(Incidencia.class))).thenAnswer(inv -> {
+            Incidencia i = inv.getArgument(0);
+            i.setId(2L);
+            return i;
+        });
+        when(mapper.toResponse(any(Incidencia.class))).thenReturn(null);
+
+        service.crear(reqSinCat, "kc-mkt");
+
+        assertThat(entity.getCategoria()).isEqualTo(Categoria.APLICACIONES);
+        assertThat(entity.getCategoriaOrigen()).isEqualTo(OrigenClasificacion.REGLA);
+        assertThat(entity.getRequiereRevision()).isTrue();
+        assertThat(entity.getImpacto()).isEqualTo(Nivel.MEDIO);
+        assertThat(entity.getPrioridad()).isEqualTo(Prioridad.MEDIA);
     }
 
     @Test
@@ -156,6 +183,59 @@ class IncidenciaServiceImplTest {
         assertThat(inc.getFreshserviceTicketId()).isEqualTo(123L);
         assertThat(inc.getFreshserviceUrl()).isEqualTo("https://integrador.atlassian.net/browse/GES-1");
         assertThat(inc.getSyncEstado()).isEqualTo(SyncEstado.SINCRONIZADO);
+    }
+
+    @Test
+    @DisplayName("procesarTriaje: la IA refina la clasificación por reglas (origen IA, prioridad recalculada)")
+    void procesarTriajeRefinaReglas() {
+        Incidencia inc = Incidencia.builder()
+                .id(8L).categoria(Categoria.OTROS).categoriaOrigen(OrigenClasificacion.REGLA)
+                .impacto(Nivel.MEDIO).urgencia(Nivel.MEDIO).build();
+        when(repository.findById(8L)).thenReturn(Optional.of(inc));
+        when(clasificadorIA.clasificar(inc)).thenReturn(Optional.of(
+                new ClasificadorIA.ClasificacionIA(Categoria.BASE_DATOS, Nivel.ALTO, Nivel.ALTO,
+                        0.9, "Timeout de conexión a la BD")));
+
+        service.procesarTriaje(8L);
+
+        assertThat(inc.getCategoria()).isEqualTo(Categoria.BASE_DATOS);
+        assertThat(inc.getCategoriaOrigen()).isEqualTo(OrigenClasificacion.IA);
+        assertThat(inc.getPrioridad()).isEqualTo(Prioridad.CRITICA);
+        assertThat(inc.getIaDiagnostico()).isEqualTo("Timeout de conexión a la BD");
+        assertThat(inc.getRequiereRevision()).isFalse();
+    }
+
+    @Test
+    @DisplayName("procesarTriaje: respeta la categoría elegida por un humano; solo agrega el diagnóstico")
+    void procesarTriajeRespetaHumano() {
+        Incidencia inc = Incidencia.builder()
+                .id(9L).categoria(Categoria.APLICACIONES).categoriaOrigen(OrigenClasificacion.HUMANO)
+                .build();
+        when(repository.findById(9L)).thenReturn(Optional.of(inc));
+        when(clasificadorIA.clasificar(inc)).thenReturn(Optional.of(
+                new ClasificadorIA.ClasificacionIA(Categoria.BASE_DATOS, Nivel.ALTO, Nivel.ALTO,
+                        0.95, "diagnóstico IA")));
+
+        service.procesarTriaje(9L);
+
+        assertThat(inc.getCategoria()).isEqualTo(Categoria.APLICACIONES);
+        assertThat(inc.getCategoriaOrigen()).isEqualTo(OrigenClasificacion.HUMANO);
+        assertThat(inc.getIaDiagnostico()).isEqualTo("diagnóstico IA");
+    }
+
+    @Test
+    @DisplayName("procesarTriaje: IA sin resultado (deshabilitada) no cambia la clasificación")
+    void procesarTriajeSinResultado() {
+        Incidencia inc = Incidencia.builder()
+                .id(10L).categoria(Categoria.OTROS).categoriaOrigen(OrigenClasificacion.REGLA).build();
+        when(repository.findById(10L)).thenReturn(Optional.of(inc));
+        when(clasificadorIA.clasificar(inc)).thenReturn(Optional.empty());
+
+        service.procesarTriaje(10L);
+
+        assertThat(inc.getCategoria()).isEqualTo(Categoria.OTROS);
+        assertThat(inc.getCategoriaOrigen()).isEqualTo(OrigenClasificacion.REGLA);
+        assertThat(inc.getIaDiagnostico()).isNull();
     }
 
     @Test

@@ -35,4 +35,11 @@ public interface IncidenciaService {
 
     /** Marca la sincronización como fallida (deshabilitado o DLQ). */
     void marcarSyncError(Long id, String mensaje);
+
+    /**
+     * Procesa el triaje asistido por IA (lo invoca el consumidor de la cola de triaje).
+     * Refina la clasificación por reglas con el resultado de la IA. Propaga el error
+     * (p. ej. IA caída) para que se reintente y, si se agota, caiga a la DLQ.
+     */
+    void procesarTriaje(Long id);
 }

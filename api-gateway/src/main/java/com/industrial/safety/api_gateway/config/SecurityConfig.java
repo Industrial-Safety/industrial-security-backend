@@ -205,20 +205,20 @@ public class SecurityConfig {
                         )
 
                         // Incidencias TI (gestión de incidentes de la plataforma)
-                        // Cualquier rol autenticado reporta y ve las suyas; el Admin (TI) atiende.
+                        // Cualquier rol autenticado reporta y ve las suyas; el rol SOPORTE (TI) atiende.
                         .pathMatchers(HttpMethod.POST, "/api/v1/incidencias").authenticated()
                         .pathMatchers(HttpMethod.GET, "/api/v1/incidencias/mias").authenticated()
                         .pathMatchers(HttpMethod.PATCH, "/api/v1/incidencias/*/aceptar").hasRole(
-                                Role.ADMINISTRADOR.name()
+                                Role.SOPORTE.name()
                         )
                         .pathMatchers(HttpMethod.PATCH, "/api/v1/incidencias/*/resolver").hasRole(
-                                Role.ADMINISTRADOR.name()
+                                Role.SOPORTE.name()
                         )
                         .pathMatchers(HttpMethod.PATCH, "/api/v1/incidencias/*/sincronizar").hasRole(
-                                Role.ADMINISTRADOR.name()
+                                Role.SOPORTE.name()
                         )
                         .pathMatchers(HttpMethod.GET, "/api/v1/incidencias", "/api/v1/incidencias/**").hasRole(
-                                Role.ADMINISTRADOR.name()
+                                Role.SOPORTE.name()
                         )
 
                         .anyExchange().authenticated())

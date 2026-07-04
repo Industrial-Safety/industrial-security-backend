@@ -50,6 +50,13 @@ spring:
 incidencias:
   notificaciones:
     enabled: ${INCIDENCIAS_NOTIF_ENABLED:true}
+  # Triaje asistido por IA (Amazon Bedrock). enabled=false -> todo corre por reglas.
+  ia:
+    enabled: ${INCIDENCIAS_IA_ENABLED:false}
+    region: ${INCIDENCIAS_IA_REGION:us-east-1}
+    model-id: ${INCIDENCIAS_IA_MODEL_ID:us.anthropic.claude-haiku-4-5-20251001-v1:0}
+    # Perfil AWS local (ej. "nueva"). Vacio en produccion -> usa el task role de ECS.
+    aws-profile: ${INCIDENCIAS_IA_AWS_PROFILE:}
 
 # Integracion con Jira Cloud (mesa de ayuda externa - ITSM).
 # enabled=false por defecto: las incidencias se gestionan igual en la BD sin ticket externo.

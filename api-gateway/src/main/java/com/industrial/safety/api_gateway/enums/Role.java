@@ -9,6 +9,7 @@ public enum Role
     TRABAJADOR,
     JEFE_SEGURIDAD,
     MARKETING,
-    LOGISTICA_ALMACEN
+    LOGISTICA_ALMACEN,
+    SOPORTE
 }
 

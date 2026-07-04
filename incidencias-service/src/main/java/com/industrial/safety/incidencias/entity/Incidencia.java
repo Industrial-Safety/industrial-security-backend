@@ -58,12 +58,31 @@ public class Incidencia {
     @Enumerated(EnumType.STRING)
     private Prioridad prioridad;
 
+    // ── Clasificacion asistida (reglas / IA) ─────────────────────────
+    /** De donde salio la categoria: REGLA (fallback), IA (Bedrock) o HUMANO (soporte). */
+    @Enumerated(EnumType.STRING)
+    private OrigenClasificacion categoriaOrigen;
+
+    /** true = clasificacion provisional que soporte deberia revisar. */
+    private Boolean requiereRevision;
+
+    /** Confianza de la IA en su clasificacion (0.0–1.0). Null si no la clasifico la IA. */
+    private Double iaConfianza;
+
+    /** Diagnostico en lenguaje claro que la IA da a soporte (que paso y por que). */
+    @Column(length = 2000)
+    private String iaDiagnostico;
+
     // ── Evidencia (URLs en S3) ───────────────────────────────────────
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "incidencia_evidencias", joinColumns = @JoinColumn(name = "incidencia_id"))
     @Column(name = "url", length = 1000)
     @Builder.Default
     private List<String> evidenciaUrls = new ArrayList<>();
+
+    /** Log/registro capturado del navegador al momento del fallo (JSON). Insumo del triaje. */
+    @Column(length = 4000)
+    private String contextoError;
 
     // ── Ciclo de vida ────────────────────────────────────────────────
     @Enumerated(EnumType.STRING)
