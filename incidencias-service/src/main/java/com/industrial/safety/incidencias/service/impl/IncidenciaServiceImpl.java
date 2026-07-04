@@ -1,10 +1,12 @@
 package com.industrial.safety.incidencias.service.impl;
 
+import com.industrial.safety.incidencias.dto.AlarmaCloudWatch;
 import com.industrial.safety.incidencias.dto.CrearIncidenciaRequest;
 import com.industrial.safety.incidencias.dto.IncidenciaResponse;
 import com.industrial.safety.incidencias.dto.ResolverIncidenciaRequest;
 import com.industrial.safety.incidencias.entity.Categoria;
 import com.industrial.safety.incidencias.entity.EstadoIncidencia;
+import com.industrial.safety.incidencias.entity.FuenteIncidencia;
 import com.industrial.safety.incidencias.entity.Incidencia;
 import com.industrial.safety.incidencias.entity.Nivel;
 import com.industrial.safety.incidencias.entity.OrigenClasificacion;
@@ -19,6 +21,7 @@ import com.industrial.safety.incidencias.repository.IncidenciaRepository;
 import com.industrial.safety.incidencias.service.ClasificadorIA;
 import com.industrial.safety.incidencias.service.ClasificadorReglas;
 import com.industrial.safety.incidencias.service.IncidenciaService;
+import com.industrial.safety.incidencias.service.MapeadorEventoAlarma;
 import com.industrial.safety.incidencias.service.PrioridadCalculator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -72,6 +75,38 @@ public class IncidenciaServiceImpl implements IncidenciaService {
 
         publisher.notificarRegistrada(guardada);
         // Refinamiento asíncrono por IA (best-effort): no bloquea la respuesta al reportero.
+        publisher.solicitarTriaje(guardada.getId());
+        return mapper.toResponse(guardada);
+    }
+
+    @Override
+    @Transactional
+    public IncidenciaResponse crearDesdeEvento(AlarmaCloudWatch alarma) {
+        Categoria categoria = MapeadorEventoAlarma.categoria(alarma);
+        Nivel impacto = MapeadorEventoAlarma.impacto(alarma);
+        // Un evento que dispara alarma es urgente por definición: urgencia = impacto.
+        Nivel urgencia = impacto;
+
+        Incidencia entity = Incidencia.builder()
+                .fuente(FuenteIncidencia.EVENTO)
+                .reporterId("cloudwatch")
+                .reporterName("CloudWatch Monitoring")
+                .reporterRole("SISTEMA")
+                .categoria(categoria)
+                .categoriaOrigen(OrigenClasificacion.REGLA)
+                .requiereRevision(false)
+                .tipo(alarma.metrica())
+                .titulo("[Evento] " + alarma.alarmName())
+                .descripcion(alarma.razon())
+                .impacto(impacto)
+                .urgencia(urgencia)
+                .prioridad(PrioridadCalculator.calcular(impacto, urgencia))
+                .estado(EstadoIncidencia.REGISTRADO)
+                .build();
+
+        Incidencia guardada = repository.save(entity);
+        guardada.setCodigo(generarCodigo(guardada));
+        // La IA puede afinar el diagnóstico del evento de forma asíncrona (best-effort).
         publisher.solicitarTriaje(guardada.getId());
         return mapper.toResponse(guardada);
     }

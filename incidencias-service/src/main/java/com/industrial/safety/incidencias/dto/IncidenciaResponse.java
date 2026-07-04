@@ -2,6 +2,7 @@ package com.industrial.safety.incidencias.dto;
 
 import com.industrial.safety.incidencias.entity.Categoria;
 import com.industrial.safety.incidencias.entity.EstadoIncidencia;
+import com.industrial.safety.incidencias.entity.FuenteIncidencia;
 import com.industrial.safety.incidencias.entity.Nivel;
 import com.industrial.safety.incidencias.entity.OrigenClasificacion;
 import com.industrial.safety.incidencias.entity.Prioridad;
@@ -16,6 +17,7 @@ public record IncidenciaResponse(
         String reporterId,
         String reporterName,
         String reporterRole,
+        FuenteIncidencia fuente,
         Categoria categoria,
         String tipo,
         String titulo,

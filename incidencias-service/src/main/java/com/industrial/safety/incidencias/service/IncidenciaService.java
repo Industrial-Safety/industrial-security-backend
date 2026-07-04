@@ -1,5 +1,6 @@
 package com.industrial.safety.incidencias.service;
 
+import com.industrial.safety.incidencias.dto.AlarmaCloudWatch;
 import com.industrial.safety.incidencias.dto.CrearIncidenciaRequest;
 import com.industrial.safety.incidencias.dto.IncidenciaResponse;
 import com.industrial.safety.incidencias.dto.ResolverIncidenciaRequest;
@@ -12,6 +13,9 @@ public interface IncidenciaService {
 
     /** Crea una incidencia (estado REGISTRADO, prioridad calculada) y notifica al reportero. */
     IncidenciaResponse crear(CrearIncidenciaRequest request, String reporterId);
+
+    /** Crea una incidencia a partir de una alarma de CloudWatch (fuente EVENTO, sin reportero humano). */
+    IncidenciaResponse crearDesdeEvento(AlarmaCloudWatch alarma);
 
     /** Incidencias de un reportero (seguimiento), mas recientes primero. */
     List<IncidenciaResponse> misIncidencias(String reporterId);

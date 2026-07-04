@@ -50,6 +50,9 @@ spring:
 incidencias:
   notificaciones:
     enabled: ${INCIDENCIAS_NOTIF_ENABLED:true}
+  # Ingesta de eventos de monitoreo (CloudWatch→SNS). Token compartido; vacío = sin validar (solo dev).
+  eventos:
+    token: ${INCIDENCIAS_EVENTOS_TOKEN:}
   # Triaje asistido por IA (Amazon Bedrock). enabled=false -> todo corre por reglas.
   ia:
     enabled: ${INCIDENCIAS_IA_ENABLED:false}

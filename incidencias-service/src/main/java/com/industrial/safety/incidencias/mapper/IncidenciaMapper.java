@@ -12,6 +12,7 @@ public interface IncidenciaMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "codigo", ignore = true)
     @Mapping(target = "reporterId", ignore = true)
+    @Mapping(target = "fuente", ignore = true)
     @Mapping(target = "prioridad", ignore = true)
     @Mapping(target = "categoriaOrigen", ignore = true)
     @Mapping(target = "requiereRevision", ignore = true)

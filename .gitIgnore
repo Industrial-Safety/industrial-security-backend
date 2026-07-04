@@ -6,6 +6,8 @@
 .idea/
 .idea/runConfigurations/
 *.xml
+# ...pero NUNCA ignorar los pom.xml de Maven (la regla *.xml de arriba los excluía)
+!**/pom.xml
 # Archivos de sistema y logs
 *.log
 .DS_Store

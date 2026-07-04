@@ -35,6 +35,12 @@ public class Incidencia {
     private String reporterName;
     private String reporterRole;
 
+    // ── Origen ───────────────────────────────────────────────────────
+    /** USUARIO (reportada por una persona) o EVENTO (generada por una alarma de monitoreo). */
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private FuenteIncidencia fuente = FuenteIncidencia.USUARIO;
+
     // ── Clasificacion ────────────────────────────────────────────────
     @Enumerated(EnumType.STRING)
     private Categoria categoria;

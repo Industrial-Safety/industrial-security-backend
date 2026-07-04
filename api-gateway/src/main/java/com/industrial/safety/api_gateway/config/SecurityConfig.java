@@ -205,6 +205,8 @@ public class SecurityConfig {
                         )
 
                         // Incidencias TI (gestión de incidentes de la plataforma)
+                        // Ingesta de eventos de monitoreo (CloudWatch→SNS): pública, protegida por token propio.
+                        .pathMatchers(HttpMethod.POST, "/api/v1/incidencias/eventos", "/api/v1/incidencias/eventos/**").permitAll()
                         // Cualquier rol autenticado reporta y ve las suyas; el rol SOPORTE (TI) atiende.
                         .pathMatchers(HttpMethod.POST, "/api/v1/incidencias").authenticated()
                         .pathMatchers(HttpMethod.GET, "/api/v1/incidencias/mias").authenticated()

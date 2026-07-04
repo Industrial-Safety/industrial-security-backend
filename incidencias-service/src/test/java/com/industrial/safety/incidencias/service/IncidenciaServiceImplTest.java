@@ -1,14 +1,17 @@
 package com.industrial.safety.incidencias.service;
 
+import com.industrial.safety.incidencias.dto.AlarmaCloudWatch;
 import com.industrial.safety.incidencias.dto.CrearIncidenciaRequest;
 import com.industrial.safety.incidencias.dto.ResolverIncidenciaRequest;
 import com.industrial.safety.incidencias.entity.Categoria;
 import com.industrial.safety.incidencias.entity.EstadoIncidencia;
+import com.industrial.safety.incidencias.entity.FuenteIncidencia;
 import com.industrial.safety.incidencias.entity.Incidencia;
 import com.industrial.safety.incidencias.entity.Nivel;
 import com.industrial.safety.incidencias.entity.OrigenClasificacion;
 import com.industrial.safety.incidencias.entity.Prioridad;
 import com.industrial.safety.incidencias.entity.SyncEstado;
+import org.mockito.ArgumentCaptor;
 import com.industrial.safety.incidencias.exception.EstadoInvalidoException;
 import com.industrial.safety.incidencias.exception.ResourceNotFoundException;
 import com.industrial.safety.incidencias.integration.JiraClient;
@@ -97,6 +100,32 @@ class IncidenciaServiceImplTest {
         assertThat(entity.getRequiereRevision()).isTrue();
         assertThat(entity.getImpacto()).isEqualTo(Nivel.MEDIO);
         assertThat(entity.getPrioridad()).isEqualTo(Prioridad.MEDIA);
+    }
+
+    @Test
+    @DisplayName("crearDesdeEvento: incidencia fuente EVENTO clasificada desde la alarma")
+    void crearDesdeEventoClasifica() {
+        AlarmaCloudWatch alarma = new AlarmaCloudWatch(
+                "ecs-cpu-critical", "ALARM", "Servicio down: CPU al 98%", "AWS/ECS", "CPUUtilization", 95.0);
+        when(repository.save(any(Incidencia.class))).thenAnswer(inv -> {
+            Incidencia i = inv.getArgument(0);
+            i.setId(20L);
+            return i;
+        });
+        when(mapper.toResponse(any(Incidencia.class))).thenReturn(null);
+
+        service.crearDesdeEvento(alarma);
+
+        ArgumentCaptor<Incidencia> cap = ArgumentCaptor.forClass(Incidencia.class);
+        verify(repository).save(cap.capture());
+        Incidencia e = cap.getValue();
+        assertThat(e.getFuente()).isEqualTo(FuenteIncidencia.EVENTO);
+        assertThat(e.getCategoria()).isEqualTo(Categoria.INFRAESTRUCTURA);
+        assertThat(e.getImpacto()).isEqualTo(Nivel.ALTO);
+        assertThat(e.getPrioridad()).isEqualTo(Prioridad.CRITICA);
+        assertThat(e.getReporterRole()).isEqualTo("SISTEMA");
+        assertThat(e.getEstado()).isEqualTo(EstadoIncidencia.REGISTRADO);
+        verify(publisher).solicitarTriaje(20L);
     }
 
     @Test
