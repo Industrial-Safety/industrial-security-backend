@@ -17,12 +17,14 @@ import com.industrial.safety.incidencias.exception.ResourceNotFoundException;
 import com.industrial.safety.incidencias.integration.JiraClient;
 import com.industrial.safety.incidencias.mapper.IncidenciaMapper;
 import com.industrial.safety.incidencias.messaging.IncidenciaEventPublisher;
+import com.industrial.safety.incidencias.messaging.IncidenteDesdeEventoMessage;
 import com.industrial.safety.incidencias.repository.IncidenciaRepository;
 import com.industrial.safety.incidencias.service.ClasificadorIA;
 import com.industrial.safety.incidencias.service.ClasificadorReglas;
 import com.industrial.safety.incidencias.service.IncidenciaService;
 import com.industrial.safety.incidencias.service.MapeadorEventoAlarma;
 import com.industrial.safety.incidencias.service.PrioridadCalculator;
+import com.industrial.safety.incidencias.service.SlaPolitica;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -72,6 +74,7 @@ public class IncidenciaServiceImpl implements IncidenciaService {
         Incidencia guardada = repository.save(entity);
         // El codigo legible depende del id autogenerado; el dirty-checking lo persiste al commit.
         guardada.setCodigo(generarCodigo(guardada));
+        asignarSla(guardada);
 
         publisher.notificarRegistrada(guardada);
         // Refinamiento asíncrono por IA (best-effort): no bloquea la respuesta al reportero.
@@ -106,9 +109,55 @@ public class IncidenciaServiceImpl implements IncidenciaService {
 
         Incidencia guardada = repository.save(entity);
         guardada.setCodigo(generarCodigo(guardada));
+        asignarSla(guardada);
         // La IA puede afinar el diagnóstico del evento de forma asíncrona (best-effort).
         publisher.solicitarTriaje(guardada.getId());
         return mapper.toResponse(guardada);
+    }
+
+    @Override
+    @Transactional
+    public IncidenciaResponse crearDesdeEventoGestion(IncidenteDesdeEventoMessage mensaje) {
+        // CRITICAL = servicio interrumpido (impacto ALTO); ERROR = falla parcial (impacto MEDIO).
+        // Un evento que cruzó su umbral es urgente por definición: urgencia ALTA.
+        boolean critico = "CRITICAL".equalsIgnoreCase(mensaje.nivel());
+        Nivel impacto = critico ? Nivel.ALTO : Nivel.MEDIO;
+        Nivel urgencia = Nivel.ALTO;
+
+        Incidencia entity = Incidencia.builder()
+                .fuente(FuenteIncidencia.EVENTO)
+                .reporterId("eventos-service")
+                .reporterName("Gestión de Eventos")
+                .reporterRole("SISTEMA")
+                .categoria(categoriaDesdeTexto(mensaje.categoria()))
+                .categoriaOrigen(OrigenClasificacion.REGLA)
+                .requiereRevision(false)
+                .tipo(mensaje.metrica())
+                .titulo("[%s] %s".formatted(mensaje.codigoEvento(), mensaje.mensaje()))
+                .descripcion("Evento %s del servicio %s: %s=%s clasificado como %s".formatted(
+                        mensaje.codigoEvento(), mensaje.servicioOrigen(), mensaje.metrica(),
+                        mensaje.valor() != null ? mensaje.valor() : "-", mensaje.nivel()))
+                .impacto(impacto)
+                .urgencia(urgencia)
+                .prioridad(PrioridadCalculator.calcular(impacto, urgencia))
+                .estado(EstadoIncidencia.REGISTRADO)
+                .build();
+
+        Incidencia guardada = repository.save(entity);
+        guardada.setCodigo(generarCodigo(guardada));
+        asignarSla(guardada);
+        // Confirma a eventos-service para que el evento enlace su incidencia (best-effort).
+        publisher.confirmarIncidenciaDesdeEvento(mensaje.codigoEvento(), guardada.getCodigo());
+        return mapper.toResponse(guardada);
+    }
+
+    /** Traduce la categoria textual del evento a la taxonomia local; desconocida -> OTROS. */
+    private static Categoria categoriaDesdeTexto(String categoria) {
+        try {
+            return Categoria.valueOf(categoria);
+        } catch (IllegalArgumentException | NullPointerException e) {
+            return Categoria.OTROS;
+        }
     }
 
     @Override
@@ -171,15 +220,44 @@ public class IncidenciaServiceImpl implements IncidenciaService {
             throw new EstadoInvalidoException(
                     "Solo se puede resolver una incidencia EN_ATENCION (actual: " + inc.getEstado() + ")");
         }
+        Instant ahora = Instant.now();
+
+        // ── SLA (curso S16/S31): resolver fuera del plazo exige justificar la demora ──
+        if (inc.getSlaVencimiento() != null) {
+            boolean dentroDelSla = !ahora.isAfter(inc.getSlaVencimiento());
+            if (!dentroDelSla) {
+                if (request.demoraJustificacion() == null || request.demoraJustificacion().isBlank()) {
+                    throw new EstadoInvalidoException(
+                            "El SLA de esta incidencia venció: explica por qué demoró más de "
+                                    + inc.getSlaMinutos() + " minutos (queda registrado para auditoría)");
+                }
+                inc.setDemoraJustificacion(request.demoraJustificacion().trim());
+            }
+            inc.setSlaCumplido(dentroDelSla);
+        }
+
         inc.setEstado(EstadoIncidencia.RESUELTO);
         inc.setResolucionDescripcion(request.resolucionDescripcion());
         inc.setResueltoBien(request.resueltoBien());
-        inc.setResueltoEn(Instant.now());
+        inc.setResueltoEn(ahora);
         if (inc.getAtendidoPor() == null) {
             inc.setAtendidoPor(adminId);
         }
         publisher.notificarResuelta(inc);
         return mapper.toResponse(inc);
+    }
+
+    /**
+     * Asigna el SLA de resolución según la prioridad (RTO de atención, S16/S31).
+     * Se invoca tras persistir, cuando ya existen createdAt y prioridad.
+     */
+    private static void asignarSla(Incidencia inc) {
+        if (inc.getPrioridad() == null || inc.getCreatedAt() == null) {
+            return;
+        }
+        int minutos = SlaPolitica.minutos(inc.getPrioridad());
+        inc.setSlaMinutos(minutos);
+        inc.setSlaVencimiento(inc.getCreatedAt().plusSeconds(minutos * 60L));
     }
 
     @Override

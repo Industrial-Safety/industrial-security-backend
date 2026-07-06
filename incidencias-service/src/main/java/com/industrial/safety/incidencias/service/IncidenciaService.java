@@ -6,6 +6,7 @@ import com.industrial.safety.incidencias.dto.IncidenciaResponse;
 import com.industrial.safety.incidencias.dto.ResolverIncidenciaRequest;
 import com.industrial.safety.incidencias.entity.EstadoIncidencia;
 import com.industrial.safety.incidencias.entity.Prioridad;
+import com.industrial.safety.incidencias.messaging.IncidenteDesdeEventoMessage;
 
 import java.util.List;
 
@@ -16,6 +17,9 @@ public interface IncidenciaService {
 
     /** Crea una incidencia a partir de una alarma de CloudWatch (fuente EVENTO, sin reportero humano). */
     IncidenciaResponse crearDesdeEvento(AlarmaCloudWatch alarma);
+
+    /** Crea una incidencia desde un evento ERROR/CRITICAL del modulo de Gestion de Eventos (eventos-service). */
+    IncidenciaResponse crearDesdeEventoGestion(IncidenteDesdeEventoMessage mensaje);
 
     /** Incidencias de un reportero (seguimiento), mas recientes primero. */
     List<IncidenciaResponse> misIncidencias(String reporterId);

@@ -54,6 +54,12 @@ jobs:
               - 'user-service/**'
             notification-service:
               - 'notification-service/**'
+            incidencias-service:
+              - 'incidencias-service/**'
+            eventos-service:
+              - 'eventos-service/**'
+            conocimiento-service:
+              - 'conocimiento-service/**'
             api-gateway:
               - 'api-gateway/**'
             ci-workflow:
@@ -63,13 +69,14 @@ jobs:
         id: matrix
         run: |
           # Si cambió el workflow de CI, correr todos los servicios
+          # incidencias/eventos/conocimiento solo corren unit (sin Testcontainers/JaCoCo aun), como api-gateway
           if [ "${{ steps.filter.outputs.ci-workflow }}" = "true" ]; then
-            UNIT='["safety-service","purchase-service","course-service","exam-service","chat-service","order-service","payment-service","user-service","notification-service","api-gateway"]'
+            UNIT='["safety-service","purchase-service","course-service","exam-service","chat-service","order-service","payment-service","user-service","notification-service","incidencias-service","eventos-service","conocimiento-service","api-gateway"]'
             IT='["safety-service","purchase-service","course-service","exam-service","chat-service","order-service","payment-service","user-service","notification-service"]'
           else
             CHANGES='${{ steps.filter.outputs.changes }}'
             UNIT=$(echo "$CHANGES" | jq -c '[.[] | select(. != "ci-workflow")]')
-            IT=$(echo "$CHANGES"   | jq -c '[.[] | select(. != "ci-workflow" and . != "api-gateway")]')
+            IT=$(echo "$CHANGES"   | jq -c '[.[] | select(. != "ci-workflow" and . != "api-gateway" and . != "incidencias-service" and . != "eventos-service" and . != "conocimiento-service")]')
           fi
 
           UNIT_LEN=$(echo "$UNIT" | jq 'length')

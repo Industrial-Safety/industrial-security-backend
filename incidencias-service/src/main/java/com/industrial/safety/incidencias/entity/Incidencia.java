@@ -90,6 +90,20 @@ public class Incidencia {
     @Column(length = 4000)
     private String contextoError;
 
+    // ── SLA de resolucion (RTO aplicado a la atencion, curso S16/S31) ─
+    /** Minutos de SLA aplicados segun la prioridad al registrar. */
+    private Integer slaMinutos;
+
+    /** Limite de resolucion (createdAt + slaMinutos). El tablero corre el contador contra esta hora. */
+    private Instant slaVencimiento;
+
+    /** true = se resolvio dentro del SLA. Null mientras siga abierta. */
+    private Boolean slaCumplido;
+
+    /** Justificacion obligatoria cuando se resuelve fuera del SLA (queda registrada para auditoria). */
+    @Column(length = 2000)
+    private String demoraJustificacion;
+
     // ── Ciclo de vida ────────────────────────────────────────────────
     @Enumerated(EnumType.STRING)
     private EstadoIncidencia estado;

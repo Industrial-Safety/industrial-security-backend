@@ -64,6 +64,21 @@ public class IncidenciaEventPublisher {
                 "Solución: " + inc.getResolucionDescripcion()));
     }
 
+    /**
+     * Confirma a eventos-service que la incidencia del evento escalado ya existe (best-effort:
+     * si RabbitMQ falla, el enlace evento→incidencia queda sin pintar pero nada se rompe).
+     */
+    public void confirmarIncidenciaDesdeEvento(String codigoEvento, String codigoIncidencia) {
+        try {
+            rabbitTemplate.convertAndSend(
+                    RabbitMQConfig.PLATFORM_EXCHANGE, RabbitMQConfig.RK_EVENTO_INCIDENCIA_CREADA,
+                    new IncidenciaDesdeEventoCreada(codigoEvento, codigoIncidencia));
+        } catch (RuntimeException ex) {
+            log.warn("[desde-evento] No se pudo confirmar la incidencia {} del evento {}: {}",
+                    codigoIncidencia, codigoEvento, ex.getMessage());
+        }
+    }
+
     private void publicar(String routingKey, WebAlertRequest alerta) {
         if (!notificacionesEnabled) {
             return;

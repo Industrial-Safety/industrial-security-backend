@@ -223,6 +223,17 @@ public class SecurityConfig {
                                 Role.SOPORTE.name()
                         )
 
+                        // Gestión de Eventos (monitoreo ITIL): el tablero lo opera el rol SOPORTE (TI).
+                        // La ingesta entre microservicios NO pasa por el gateway (va directa/por RabbitMQ).
+                        .pathMatchers("/api/v1/eventos", "/api/v1/eventos/**").hasRole(
+                                Role.SOPORTE.name()
+                        )
+
+                        // Base de Conocimiento (ITIL Knowledge Management): consulta y edición del rol SOPORTE.
+                        .pathMatchers("/api/v1/conocimiento", "/api/v1/conocimiento/**").hasRole(
+                                Role.SOPORTE.name()
+                        )
+
                         .anyExchange().authenticated())
                 .oauth2ResourceServer(o -> o
                         .jwt(jwtSpec -> jwtSpec.jwtAuthenticationConverter(reactiveJwtAuthenticationConverterAdapter())));

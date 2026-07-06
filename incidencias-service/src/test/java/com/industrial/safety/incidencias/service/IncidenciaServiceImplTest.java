@@ -156,7 +156,7 @@ class IncidenciaServiceImplTest {
     void resolverTransicionaYNotifica() {
         Incidencia inc = Incidencia.builder().id(7L).estado(EstadoIncidencia.EN_ATENCION).build();
         when(repository.findById(7L)).thenReturn(Optional.of(inc));
-        ResolverIncidenciaRequest req = new ResolverIncidenciaRequest("Se reinició el pod", true);
+        ResolverIncidenciaRequest req = new ResolverIncidenciaRequest("Se reinició el pod", true, null);
 
         service.resolver(7L, req, "kc-admin");
 
@@ -168,11 +168,59 @@ class IncidenciaServiceImplTest {
     }
 
     @Test
+    @DisplayName("resolver fuera del SLA sin justificación lanza EstadoInvalidoException")
+    void resolverFueraDeSlaSinJustificacion() {
+        Incidencia inc = Incidencia.builder().id(8L).estado(EstadoIncidencia.EN_ATENCION)
+                .slaMinutos(60)
+                .slaVencimiento(java.time.Instant.now().minusSeconds(3600)) // venció hace 1 h
+                .build();
+        when(repository.findById(8L)).thenReturn(Optional.of(inc));
+
+        assertThatThrownBy(() -> service.resolver(8L,
+                new ResolverIncidenciaRequest("Se corrigió", true, null), "kc-admin"))
+                .isInstanceOf(EstadoInvalidoException.class)
+                .hasMessageContaining("SLA");
+        assertThat(inc.getEstado()).isEqualTo(EstadoIncidencia.EN_ATENCION); // no cambió
+    }
+
+    @Test
+    @DisplayName("resolver fuera del SLA con justificación la registra y marca slaCumplido=false")
+    void resolverFueraDeSlaConJustificacion() {
+        Incidencia inc = Incidencia.builder().id(9L).estado(EstadoIncidencia.EN_ATENCION)
+                .slaMinutos(60)
+                .slaVencimiento(java.time.Instant.now().minusSeconds(3600))
+                .build();
+        when(repository.findById(9L)).thenReturn(Optional.of(inc));
+
+        service.resolver(9L, new ResolverIncidenciaRequest(
+                "Se corrigió", true, "Dependencia del proveedor de pagos: respondió después de 3 horas"), "kc-admin");
+
+        assertThat(inc.getSlaCumplido()).isFalse();
+        assertThat(inc.getDemoraJustificacion()).contains("proveedor de pagos");
+        assertThat(inc.getEstado()).isEqualTo(EstadoIncidencia.RESUELTO);
+    }
+
+    @Test
+    @DisplayName("resolver dentro del SLA marca slaCumplido=true sin exigir justificación")
+    void resolverDentroDelSla() {
+        Incidencia inc = Incidencia.builder().id(10L).estado(EstadoIncidencia.EN_ATENCION)
+                .slaMinutos(60)
+                .slaVencimiento(java.time.Instant.now().plusSeconds(3600)) // vence en 1 h
+                .build();
+        when(repository.findById(10L)).thenReturn(Optional.of(inc));
+
+        service.resolver(10L, new ResolverIncidenciaRequest("Listo", true, null), "kc-admin");
+
+        assertThat(inc.getSlaCumplido()).isTrue();
+        assertThat(inc.getDemoraJustificacion()).isNull();
+    }
+
+    @Test
     @DisplayName("resolver: no EN_ATENCION lanza EstadoInvalidoException")
     void resolverEnEstadoInvalido() {
         Incidencia inc = Incidencia.builder().id(7L).estado(EstadoIncidencia.REGISTRADO).build();
         when(repository.findById(7L)).thenReturn(Optional.of(inc));
-        ResolverIncidenciaRequest req = new ResolverIncidenciaRequest("x", false);
+        ResolverIncidenciaRequest req = new ResolverIncidenciaRequest("x", false, null);
 
         assertThatThrownBy(() -> service.resolver(7L, req, "kc-admin"))
                 .isInstanceOf(EstadoInvalidoException.class);

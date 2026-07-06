@@ -1,0 +1,32 @@
+{
+  "family": "eventos-service",
+  "executionRoleArn": "arn:aws:iam::560904638369:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::560904638369:role/ecsTaskExecutionRole",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "containerDefinitions": [
+    {
+      "name": "eventos-service",
+      "image": "PLACEHOLDER",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8088,
+          "protocol": "tcp",
+          "name": "eventos-service-8088-tcp",
+          "appProtocol": "http"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/eventos-service",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

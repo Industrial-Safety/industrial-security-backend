@@ -1,0 +1,59 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: eventos-service
+  config:
+    import: "aws-parameterstore:/config/application/,aws-parameterstore:/config/eventos-service/"
+  threads:
+    virtual:
+      enabled: true
+  cloud:
+    config:
+      enabled: false
+    aws:
+      parameterstore:
+        region: us-east-1
+  datasource:
+    # En produccion lo sobreescribe SSM (/config/eventos-service/spring.datasource.url).
+    # Fallback local: postgres en localhost con una BD 'eventos-db'.
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/eventos-db}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:admin}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 5000
+      max-lifetime: 900000
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:guest}
+    password: ${SPRING_RABBITMQ_PASSWORD:guest}
+    ssl:
+      enabled: ${SPRING_RABBITMQ_SSL_ENABLED:false}
+
+# ── Politicas de deteccion y manejo de eventos (material del curso S15/S29) ───────
+# Umbrales por metrica: cada banda es "desde:NIVEL"; se aplica la banda de mayor
+# 'desde' que sea <= al valor observado. Los defaults viven en PoliticaUmbrales
+# (diapositiva 30). Aqui solo se sobreescriben/agregan sin tocar codigo.
+#
+# Ejemplo (equivalente a los defaults de CPU):
+#   eventos:
+#     umbrales:
+#       cpu:
+#         - "0:INFORMACION"
+#         - "75:WARNING"
+#         - "85:ERROR"
+#         - "95:CRITICAL"
+eventos:
+  umbrales: {}
+  # Publicacion del evento ERROR/CRITICAL hacia incidencias-service (RabbitMQ).
+  # false = solo se registra y clasifica el evento, sin generar incidencia.
+  generar-incidencias:
+    enabled: ${EVENTOS_GENERAR_INCIDENCIAS:true}

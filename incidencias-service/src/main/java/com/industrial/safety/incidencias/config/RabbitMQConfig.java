@@ -37,6 +37,14 @@ public class RabbitMQConfig {
     public static final String TRIAGE_DLQ = "incidencias.triage.dlq";
     public static final String RK_TRIAGE = "event.incidencia.triage";
 
+    /** Eventos ERROR/CRITICAL de eventos-service que escalan a incidencia (los consume este servicio). */
+    public static final String DESDE_EVENTO_QUEUE = "incidencias.desde-evento.queue";
+    public static final String DESDE_EVENTO_DLQ = "incidencias.desde-evento.dlq";
+    public static final String RK_DESDE_EVENTO = "event.incidencia.desde-evento";
+
+    /** Confirmacion hacia eventos-service: la incidencia del evento ya fue creada. */
+    public static final String RK_EVENTO_INCIDENCIA_CREADA = "event.evento.incidencia-creada";
+
     @Bean
     MessageConverter jsonMessageConverter() {
         return new JacksonJsonMessageConverter();
@@ -96,5 +104,28 @@ public class RabbitMQConfig {
     @Bean
     Binding triageDlqBinding(Queue triageDeadLetterQueue, TopicExchange deadLetterExchange) {
         return BindingBuilder.bind(triageDeadLetterQueue).to(deadLetterExchange).with(TRIAGE_DLQ);
+    }
+
+    @Bean
+    Queue desdeEventoQueue() {
+        return QueueBuilder.durable(DESDE_EVENTO_QUEUE)
+                .withArgument("x-dead-letter-exchange", DLX_EXCHANGE)
+                .withArgument("x-dead-letter-routing-key", DESDE_EVENTO_DLQ)
+                .build();
+    }
+
+    @Bean
+    Queue desdeEventoDeadLetterQueue() {
+        return QueueBuilder.durable(DESDE_EVENTO_DLQ).build();
+    }
+
+    @Bean
+    Binding desdeEventoBinding(Queue desdeEventoQueue, TopicExchange platformExchange) {
+        return BindingBuilder.bind(desdeEventoQueue).to(platformExchange).with(RK_DESDE_EVENTO);
+    }
+
+    @Bean
+    Binding desdeEventoDlqBinding(Queue desdeEventoDeadLetterQueue, TopicExchange deadLetterExchange) {
+        return BindingBuilder.bind(desdeEventoDeadLetterQueue).to(deadLetterExchange).with(DESDE_EVENTO_DLQ);
     }
 }
