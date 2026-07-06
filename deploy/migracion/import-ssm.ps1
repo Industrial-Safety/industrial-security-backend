@@ -33,7 +33,8 @@ foreach ($p in $data.Parameters) {
     # cli-input-json evita problemas de quoting con valores que traen espacios/simbolos.
     $payload = @{ Name = $p.Name; Value = $p.Value; Type = $p.Type; Overwrite = $true } | ConvertTo-Json -Compress
     $tmp = New-TemporaryFile
-    Set-Content -Path $tmp -Value $payload -Encoding UTF8
+    # UTF-8 SIN BOM: el AWS CLI rechaza el JSON si lleva BOM (PS 5.1 lo agrega con Set-Content).
+    [System.IO.File]::WriteAllText($tmp.FullName, $payload, (New-Object System.Text.UTF8Encoding($false)))
     aws ssm put-parameter --cli-input-json "file://$tmp" --profile $ProfileName --region $Region --output text | Out-Null
     if ($LASTEXITCODE -eq 0) { $ok++; Write-Host "OK    $($p.Name)" }
     else { $fail++; Write-Warning "FALLO $($p.Name)" }

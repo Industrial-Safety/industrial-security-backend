@@ -1,7 +1,7 @@
 {
   "family": "ngrok",
-  "executionRoleArn": "arn:aws:iam::560904638369:role/ecsTaskExecutionRole",
-  "taskRoleArn": "arn:aws:iam::560904638369:role/ecsTaskExecutionRole",
+  "executionRoleArn": "arn:aws:iam::665414916692:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::665414916692:role/ecsTaskExecutionRole",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "256",
@@ -15,7 +15,7 @@
       "secrets": [
         {
           "name": "NGROK_AUTHTOKEN",
-          "valueFrom": "arn:aws:ssm:us-east-1:560904638369:parameter/config/ngrok/authtoken"
+          "valueFrom": "arn:aws:ssm:us-east-1:665414916692:parameter/config/ngrok/authtoken"
         }
       ],
       "portMappings": [
