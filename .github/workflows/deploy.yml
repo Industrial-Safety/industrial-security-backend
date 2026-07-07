@@ -1,13 +1,13 @@
 name: CD — Deploy to AWS ECS
 
-# CD en PAUSA durante desarrollo: solo se ejecuta de forma MANUAL (no auto-deploy en cada push).
-# Para reactivar el auto-deploy, descomentar el bloque workflow_run y quitar workflow_dispatch.
+# CD AUTOMATICO (reactivado 2026-07-07, cuenta nueva): cada push a main corre el CI y,
+# si pasa, despliega. El workflow_dispatch se conserva para despliegues manuales.
 on:
   workflow_dispatch: {}
-  # workflow_run:
-  #   workflows: ["CI — Industrial Safety Backend"]
-  #   types: [completed]
-  #   branches: [main]
+  workflow_run:
+    workflows: ["CI — Industrial Safety Backend"]
+    types: [completed]
+    branches: [main]
 
 permissions:
   id-token: write   # necesario para OIDC con AWS
