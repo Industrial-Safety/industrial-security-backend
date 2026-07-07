@@ -57,3 +57,6 @@ eventos:
   # false = solo se registra y clasifica el evento, sin generar incidencia.
   generar-incidencias:
     enabled: ${EVENTOS_GENERAR_INCIDENCIAS:true}
+  # Ingesta de alarmas de monitoreo (CloudWatch→SNS). Token compartido; vacio = sin validar (solo dev).
+  ingesta:
+    token: ${EVENTOS_INGESTA_TOKEN:}

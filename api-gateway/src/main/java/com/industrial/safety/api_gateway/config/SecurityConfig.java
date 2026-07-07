@@ -224,7 +224,8 @@ public class SecurityConfig {
                         )
 
                         // Gestión de Eventos (monitoreo ITIL): el tablero lo opera el rol SOPORTE (TI).
-                        // La ingesta entre microservicios NO pasa por el gateway (va directa/por RabbitMQ).
+                        // Ingesta de alarmas (CloudWatch→SNS): pública, protegida por token propio (va ANTES del wildcard).
+                        .pathMatchers(HttpMethod.POST, "/api/v1/eventos/sns", "/api/v1/eventos/sns/**").permitAll()
                         .pathMatchers("/api/v1/eventos", "/api/v1/eventos/**").hasRole(
                                 Role.SOPORTE.name()
                         )
