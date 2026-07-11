@@ -12,6 +12,7 @@ public enum CategoriaArticulo {
     RESPALDOS("Respaldos"),
     EVENTOS("Monitoreo y eventos"),
     INCIDENCIAS("Gestión de incidencias"),
+    INCIDENTES_PASADOS("Incidentes pasados"),
     RUNBOOK("Runbooks / procedimientos");
 
     private final String label;
