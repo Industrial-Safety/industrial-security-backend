@@ -31,6 +31,10 @@ spring:
       ddl-auto: update
     show-sql: false
 
+eureka:
+  client:
+    enabled: false
+
 # Carga los articulos base (planes de continuidad/DRP/respaldos y runbooks) si la BD esta vacia.
 conocimiento:
   seed:
